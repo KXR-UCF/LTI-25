@@ -50,10 +50,10 @@ export default function ThermalCoupleGraph({
                     </div>
                 </div>
             </div>
-            <div className="flex-1 p-4 pt-0">
+            <div className="flex-1 p- pt-0">
                 <div
                     id="thermal-chart" // diff
-                    className="relative h-full bg-gradient-to-b from-gray-900/50 to-gray-900/30 rounded-lg border border-white/10"
+                    className="relative h-64 bg-gradient-to-b from-gray-900/50 to-gray-900/30 rounded-lg border border-white/10"
                 >
                     {thermalCoupleData.length === 0 ? ( // diff
                         <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm flex flex-col items-center justify-center">
@@ -230,12 +230,12 @@ export default function ThermalCoupleGraph({
                                     iconSize={8}
                                 />
                                 <Line
-                                    type="basis"
+                                    type="linear"
                                     dataKey="chamber"
                                     name="Chamber Temperature"
                                     stroke="#F97316"
                                     strokeWidth={2}
-                                    dot={false}
+                                    dot={{ r: 3, fill: '#F97316', stroke: 'white', strokeWidth: 1 }}
                                     activeDot={{
                                         r: 4,
                                         fill: "#F97316",
@@ -243,16 +243,15 @@ export default function ThermalCoupleGraph({
                                         strokeWidth: 2,
                                     }}
                                     animationDuration={0}
-                                    connectNulls={true}
-                                    filter="url(#glowChamber)"
+                                    connectNulls={false}
                                 />
                                 <Line
-                                    type="basis"
+                                    type="linear"
                                     dataKey="nozzle"
                                     name="Nozzle Temperature"
                                     stroke="#DC2626"
                                     strokeWidth={2}
-                                    dot={false}
+                                    dot={{ r: 3, fill: '#DC2626', stroke: 'white', strokeWidth: 1 }}
                                     activeDot={{
                                         r: 4,
                                         fill: "#DC2626",
@@ -260,8 +259,7 @@ export default function ThermalCoupleGraph({
                                         strokeWidth: 2,
                                     }}
                                     animationDuration={0}
-                                    connectNulls={true}
-                                    filter="url(#glowNozzle)"
+                                    connectNulls={false}
                                 />
                             </LineChart>
                         </ResponsiveContainer>

@@ -114,16 +114,15 @@ export default function PressureTransducerGraph({
                                     iconSize={8}
                                 />
                                 <Line 
-                                    type="basis" 
+                                    type="linear" 
                                     dataKey="pressure" 
                                     name="Pressure Transducer"
                                     stroke="#8B5CF6" 
                                     strokeWidth={2}
-                                    dot={false}
+                                    dot={{ r: 3, fill: '#8B5CF6', stroke: 'white', strokeWidth: 1 }}
                                     activeDot={{ r: 4, fill: '#8B5CF6', stroke: 'white', strokeWidth: 2 }}
                                     animationDuration={0}
-                                    connectNulls={true}
-                                    filter="url(#glowPressure)"
+                                    connectNulls={false}
                                 />
                             </LineChart>
                         </ResponsiveContainer>

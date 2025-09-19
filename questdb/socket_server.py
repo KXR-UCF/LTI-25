@@ -54,12 +54,9 @@ try:
             print("No data received. Closing connection.")
             break
 
-        with open("telemetryData.txt", "r") as file: # Reads dummy data off of file
-            lines = file.readlines()
-            for line in lines:
-                f1, f2, f3, pressure = map(float, line.strip().split()) # Reads the dummy file for values
-                data = struct.pack('ffff', f1, f2, f3, pressure) # Packing and sending data to client (Cosmo)
-                client_socket.send(data)
+        # TODO: Replace with real telemetry data from sensors
+        # This section should read actual sensor data and send it to the client
+        # Example: Read from actual load cells, pressure transducers, etc.
 
         # Decode the received data
         msg = msg.decode().strip()

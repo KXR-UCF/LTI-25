@@ -1,5 +1,5 @@
 export interface DataPoint {
-  timestamp: number;
+  timestamp: number | string;
   cell1: number;
   cell2: number;
   cell3: number;
@@ -7,8 +7,14 @@ export interface DataPoint {
 }
 
 export interface PressureDataPoint {
-  timestamp: number;
+  timestamp: number | string;
   pressure: number;
+}
+
+export interface ThermalCoupleDataPoint {
+  timestamp: number | string;
+  chamber: number;
+  nozzle: number;
 }
 
 export interface TelemetryRow {
@@ -34,5 +40,14 @@ export interface LatestData {
   cell3?: number;
   total?: number;
   pressure?: number;
+  pt2?: number;
+  pt3?: number;
+  pt4?: number;
+  pt5?: number;
+  pt6?: number;
+  chamber?: number;
+  nozzle?: number;
+  peakNetForce?: number;
+  weight?: number;
   [key: string]: number | undefined;
 }

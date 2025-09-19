@@ -1,20 +1,23 @@
-import { DataPoint, PressureDataPoint } from '../../interfaces';
-import LoadCellGraph from './LoadCellGraph';
+import { PressureDataPoint, ThermalCoupleDataPoint } from '../../interfaces';
 import PressureTransducerGraph from './PressureTransducerGraph';
+import ThermalCoupleGraph from './ThermalCoupleGraph';
 
 interface GraphsProps {
-    graphData: DataPoint[];
-    setGraphData: React.Dispatch<React.SetStateAction<DataPoint[]>>;
-    completeGraphData: DataPoint[];
-
     pressureData: PressureDataPoint[];
     setPressureData: React.Dispatch<React.SetStateAction<PressureDataPoint[]>>;
     completePressureData: PressureDataPoint[];
+
+    thermalCoupleData?: ThermalCoupleDataPoint[];
+    setThermalCoupleData?: React.Dispatch<React.SetStateAction<ThermalCoupleDataPoint[]>>;
+    completeThermalData?: ThermalCoupleDataPoint[];
+
+    mode: 'liquid' | 'solid';
 }
 
 export default function Graphs({ 
-        graphData, setGraphData, completeGraphData,
-        pressureData, setPressureData, completePressureData
+        pressureData, setPressureData, completePressureData,
+        thermalCoupleData, setThermalCoupleData, completeThermalData,
+        mode
     }: GraphsProps) {
 
     const exportCompleteChart = async (data: any[], filename: string, isLoadCell: boolean) => {
@@ -171,20 +174,22 @@ export default function Graphs({
     };
 
     return(
-          <div className="lg:col-span-3 grid grid-rows-2 gap-2">
-            {/* Load Cell Graph */}
-            <LoadCellGraph
-                graphData = { graphData }
-                completeGraphData = { completeGraphData }
-                exportCompleteChart = { exportCompleteChart }
-            />
-            
+          <div className={`lg:col-span-3 grid gap-2 ${mode === 'liquid' ? 'grid-rows-2' : 'grid-rows-1'}`}>
             {/* Pressure Transducer Graph */}
             <PressureTransducerGraph
                 pressureData = { pressureData }
                 completePressureData = { completePressureData }
                 exportCompleteChart = { exportCompleteChart }
             />
+
+            {/* Thermal Couple Graph - Only show in liquid mode */}
+            {mode === 'liquid' && thermalCoupleData && completeThermalData && (
+                <ThermalCoupleGraph
+                    thermalCoupleData = { thermalCoupleData }
+                    completeThermalData = { completeThermalData }
+                    exportCompleteChart = { exportCompleteChart }
+                />
+            )}
           </div>
     )
 }
