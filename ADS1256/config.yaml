@@ -15,9 +15,9 @@ ADC2:
   enabled: false
   gain: "GAIN_64"
   data_rate: "30000SPS"
-  RST_PIN: null
-  CS_PIN: null 
-  DRDY_PIN: null
+  RST_PIN: 25
+  CS_PIN: 7 
+  DRDY_PIN: 23
   channels:
     0: null
     1: null
