@@ -74,7 +74,7 @@ class AdcHandler:
         return voltages
 
 
-class LoadCells:
+class LoadCellHandler:
 
     def __init__(self, adc_handler: AdcHandler):
         self.adc_handler = adc_handler
@@ -104,13 +104,13 @@ class LoadCells:
             print(f"\tADC: {load_cell['adc']:<5}\tChannel: {load_cell['channel']:<5}\tTare: {load_cell['tare']:<5}\tScale: {load_cell['scale']:<5}")
 
 
-    def get_all_load_cell_voltages(self):
+    def get_all_voltages(self):
         voltages = self.adc_handler.get_voltages(self.load_cells)
         return voltages
 
 
-    def get_all_load_cell_values(self):
-        voltages = np.array(self.get_all_load_cell_voltages())
+    def get_all_values(self):
+        voltages = np.array(self.get_all_voltages())
         tares = np.array(self.tares)
         scales = np.array(self.scales)
 
@@ -124,19 +124,19 @@ class LoadCells:
 
         print(f"Calibrating Tares")
         for i in range(calibration_trials):
-            trial = np.array(self.get_all_load_cell_voltages())
+            trial = np.array(self.get_all_voltages())
 
             if len(trial_vals) == 0:
                 trial_vals = trial.reshape(1,-1)
             else:
                 np.append(trial_vals, trial.reshape(1, -2), axis=0)
 
-        tares = np.mean(trial_vals, axis=0).reshape(1, -1) * -1
-        
-        with open(CONFIG_FILE_NAME, 'rw') as file:
+        self.tares = np.mean(trial_vals, axis=0).flatten() * -1
+
+        with open(CONFIG_FILE_NAME, 'w') as file:
             for i, load_cell in enumerate(self.load_cells):
                 name = load_cell["name"]
-                config["devices"]["load_cells"][name]["tare"] = tares[i]
+                config["devices"]["load_cells"][name]["tare"] = float(self.tares[i])
             yaml.safe_dump(config, file, default_flow_style=False, sort_keys=False)
         print(f"Tares Calibrated")
 
@@ -149,7 +149,7 @@ class PressureTransducers:
 
     def get_all_transucer_voltages():
         pass
-    
-adc_handler = AdcHandler()
-load_cell_object = LoadCells(adc_handler)
-load_cell_object.calibrate_tares()
+#
+# adc_handler = AdcHandler()
+# load_cell_object = LoadCells(adc_handler)
+# load_cell_object.calibrate_tares()
