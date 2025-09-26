@@ -74,19 +74,19 @@ class ADS1256:
         self.scan_mode = 1 # currently set as default: 1=differential mode
 
     # raspberry pi pin managment
-    def digital_write(pin, value):
+    def digital_write(self, pin, value):
         GPIO.output(pin, value)
 
     def digital_read(self, pin):
         return GPIO.input(self.drdy_pin)
 
-    def delay_ms(delaytime):
+    def delay_ms(self, delaytime):
         time.sleep(delaytime // 1000.0)
 
-    def spi_writebyte(data):
+    def spi_writebyte(self, data):
         SPI.writebytes(data)
         
-    def spi_readbytes(reg):
+    def spi_readbytes(self, reg):
         return SPI.readbytes(reg)
         
     def module_init(self):
