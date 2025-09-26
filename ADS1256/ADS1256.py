@@ -1,5 +1,6 @@
-import config
 import RPi.GPIO as GPIO
+import spidev
+import time
 
 # gain channel
 GAIN_E = {'GAIN_1' : 0, # GAIN   1
@@ -61,43 +62,74 @@ CMD = {'CMD_WAKEUP' : 0x00,     # Completes SYNC and Exits Standby Mode 0000  00
        'CMD_RESET' : 0xFE,      # Reset to Power-Up Values 1111   1110 (FEh)
       }
 
+SPI = spidev.SpiDev(0, 0)
+
+
 class ADS1256:
-    def __init__(self):
-        self.rst_pin = config.RST_PIN
-        self.cs_pin = config.CS_PIN
-        self.drdy_pin = config.DRDY_PIN
+    def __init__(self, rst_pin, cs_pin, drdy_pin):
+        self.rst_pin = rst_pin
+        self.cs_pin = cs_pin
+        self.drdy_pin = drdy_pin
         # this was missing from the original library, without this, the mode would not be set by the setMode since it was not a parameter of the class
         self.scan_mode = 1 # currently set as default: 1=differential mode
 
+    # raspberry pi pin managment
+    def digital_write(pin, value):
+        GPIO.output(pin, value)
+
+    def digital_read(self, pin):
+        return GPIO.input(self.drdy_pin)
+
+    def delay_ms(delaytime):
+        time.sleep(delaytime // 1000.0)
+
+    def spi_writebyte(data):
+        SPI.writebytes(data)
+        
+    def spi_readbytes(reg):
+        return SPI.readbytes(reg)
+        
+    def module_init(self):
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
+        GPIO.setup(self.rst_pin, GPIO.OUT)
+        GPIO.setup(self.cs_pin, GPIO.OUT)
+        #GPIO.setup(DRDY_PIN, GPIO.IN)
+        GPIO.setup(self.drdy_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        SPI.max_speed_hz = 20000
+        SPI.mode = 0b01
+        return 0
+
+
     # Hardware reset
     def reset(self):
-        config.digital_write(self.rst_pin, GPIO.HIGH)
-        config.delay_ms(200)
-        config.digital_write(self.rst_pin, GPIO.LOW)
-        config.delay_ms(200)
-        config.digital_write(self.rst_pin, GPIO.HIGH)
+        self.digital_write(self.rst_pin, GPIO.HIGH)
+        self.delay_ms(200)
+        self.digital_write(self.rst_pin, GPIO.LOW)
+        self.delay_ms(200)
+        self.digital_write(self.rst_pin, GPIO.HIGH)
     
     def writeCmd(self, reg):
-        config.digital_write(self.cs_pin, GPIO.LOW)#cs  0
-        config.spi_writebyte([reg])
-        config.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
+        self.digital_write(self.cs_pin, GPIO.LOW)#cs  0
+        self.spi_writebyte([reg])
+        self.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
     
     def writeReg(self, reg, data):
-        config.digital_write(self.cs_pin, GPIO.LOW)#cs  0
-        config.spi_writebyte([CMD['CMD_WREG'] | reg, 0x00, data])
-        config.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
+        self.digital_write(self.cs_pin, GPIO.LOW)#cs  0
+        self.spi_writebyte([CMD['CMD_WREG'] | reg, 0x00, data])
+        self.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
         
     def readData(self, reg):
-        config.digital_write(self.cs_pin, GPIO.LOW)#cs  0
-        config.spi_writebyte([CMD['CMD_RREG'] | reg, 0x00])
-        data = config.spi_readbytes(1)
-        config.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
+        self.digital_write(self.cs_pin, GPIO.LOW)#cs  0
+        self.spi_writebyte([CMD['CMD_RREG'] | reg, 0x00])
+        data = self.spi_readbytes(1)
+        self.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
 
         return data
         
     def waitDRDY(self):
         for i in range(0,400000,1):
-            if(config.digital_read(self.drdy_pin) == 0):
+            if(self.digital_read(self.drdy_pin) == 0):
                 
                 break
         if(i >= 400000):
@@ -120,12 +152,12 @@ class ADS1256:
         buf[2] = (0<<5) | (0<<3) | (gain<<0)
         buf[3] = drate
         
-        config.digital_write(self.cs_pin, GPIO.LOW)#cs  0
-        config.spi_writebyte([CMD['CMD_WREG'] | 0, 0x03])
-        config.spi_writebyte(buf)
+        self.digital_write(self.cs_pin, GPIO.LOW)#cs  0
+        self.spi_writebyte([CMD['CMD_WREG'] | 0, 0x03])
+        self.spi_writebyte(buf)
         
-        config.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
-        config.delay_ms(1) 
+        self.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
+        self.delay_ms(1) 
 
 
     def setChannel(self, Channel):
@@ -154,7 +186,7 @@ class ADS1256:
 
 
     def init(self):
-        if (config.module_init() != 0):
+        if (self.module_init() != 0):
             return -1
         self.reset()
         id = self.readChipID()
@@ -168,12 +200,12 @@ class ADS1256:
         
     def read_ADC_Data(self):
         self.waitDRDY()
-        config.digital_write(self.cs_pin, GPIO.LOW)#cs  0
-        config.spi_writebyte([CMD['CMD_RDATA']])
-        # config.delay_ms(10)
+        self.digital_write(self.cs_pin, GPIO.LOW)#cs  0
+        self.spi_writebyte([CMD['CMD_RDATA']])
+        # self.delay_ms(10)
 
-        buf = config.spi_readbytes(3)
-        config.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
+        buf = self.spi_readbytes(3)
+        self.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
         read = (buf[0]<<16) & 0xff0000
         read |= (buf[1]<<8) & 0xff00
         read |= (buf[2]) & 0xff
@@ -188,18 +220,18 @@ class ADS1256:
             print(self.scan_mode)
             self.setChannel(Channel)
             self.writeCmd(CMD['CMD_SYNC'])
-            # config.delay_ms(10)
+            # self.delay_ms(10)
             self.writeCmd(CMD['CMD_WAKEUP'])
-            # config.delay_ms(200)
+            # self.delay_ms(200)
             Value = self.read_ADC_Data()
         else:
             if(Channel>=4):
                 return 0
             self.setDiffChannel(Channel)
             self.writeCmd(CMD['CMD_SYNC'])
-            # config.delay_ms(10) 
+            # self.delay_ms(10) 
             self.writeCmd(CMD['CMD_WAKEUP'])
-            # config.delay_ms(10) 
+            # self.delay_ms(10) 
             Value = self.read_ADC_Data()
         return Value
         
