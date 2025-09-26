@@ -4,7 +4,7 @@ python-dateutil
 pytz
 PyYAML
 questdb
-RPi.GPIO
+rpi-lgpio
 six
 spidev
 tzdata
