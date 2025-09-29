@@ -1,16 +1,15 @@
+#!/usr/bin/python
+
 #KXR DAQ - example file for 4 differential channels
 
-#!/usr/bin/python
-# -*- coding:utf-8 -*-
-
-import ADS1256
 import numpy as np
 import RPi.GPIO as GPIO
+import ADS1256
 
 # Example pins for 1 pi hat
-# Pin definition        #using pins for hat 1 from kxr hat, gpio or physical pin ?
+# Pin definition        #using pins for hat 1 from kxr hat, gpio pin
 RST_PIN  = 24
-CS_PIN   = 8        
+CS_PIN   = 8
 DRDY_PIN = 22
 
 try:
