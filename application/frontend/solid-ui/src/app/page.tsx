@@ -1,17 +1,22 @@
 "use client";
 
+import {useState} from "react"
+
+import LiquidUI from "./components/LiquidUI";
 import SolidUI from "./components/SolidUI";
 
 export default function Home() {
 
+  const [solid, setSolid] = useState(true)
+
   const switchUI = () => {
-    console.log("Working")
+    setSolid(!solid)
   }
 
   return (
     <>
       <button onClick = {switchUI}>Yo</button>
-      <SolidUI/>
+      {solid? <SolidUI/>: <LiquidUI/>}
     </>
   )
 }
