@@ -678,7 +678,7 @@ export default function LiquidUI() {
                 )}
               </div>
             </div>
-            </div>
+          </div>
             
             {/* Thermal Couple Graph */}
             <div className="bg-gradient-to-b from-gray-900/50 to-gray-900/30 rounded-lg border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-sm flex flex-col">
