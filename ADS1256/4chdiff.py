@@ -17,7 +17,7 @@ try:
     ADC.init()
     ADC.configADC(6,0xF0)
 
-    while (1):
+    while True:
         ADC_Value = ADC.getAll()
         voltage = np.array(ADC_Value) * 5.0 / 0x7fffff
 
