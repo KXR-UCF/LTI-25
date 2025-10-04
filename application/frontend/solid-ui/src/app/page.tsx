@@ -58,6 +58,7 @@ export default function Home() {
   const [peakNetForce, setPeakNetForce] = useState(0);
   const [peakPressure, setPeakPressure] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
 
@@ -118,17 +119,16 @@ export default function Home() {
     const newPressureData: PressureDataPoint[] = [];
 
     // Set start time from first data point if not already set
-    let currentStartTime = startTime;
-    if (currentStartTime === null && processedRows.length > 0) {
-      currentStartTime = new Date(processedRows[0].timestamp).getTime();
-      setStartTime(currentStartTime);
+    if (startTimeRef.current === null && processedRows.length > 0) {
+      startTimeRef.current = new Date(processedRows[0].timestamp).getTime();
+      setStartTime(startTimeRef.current);
     }
 
     processedRows.forEach(row => {
       // Calculate runtime in seconds from QuestDB timestamp
       const dataPointTime = new Date(row.timestamp).getTime();
-      const runtimeSeconds = currentStartTime !== null
-        ? (dataPointTime - currentStartTime) / 1000
+      const runtimeSeconds = startTimeRef.current !== null
+        ? (dataPointTime - startTimeRef.current) / 1000
         : 0;
 
       const loadCellPoint: DataPoint = {
