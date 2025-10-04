@@ -99,6 +99,7 @@ class AdcManager:
 # TODO: ensure tares and scales are applied to the right load cell by using it's name rather than array index
 #       this is to allow a case where we may only want to pull the data from only some of the load cells at 
 #       some instance 
+#       (Note: this would only be needed for a function that pulls data from a specified set of load cells rather than all of them)
 class LoadCells:
     """Uses the AdcManager to manage all the attached load cells"""
 

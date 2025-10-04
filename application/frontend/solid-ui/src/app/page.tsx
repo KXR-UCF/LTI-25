@@ -57,7 +57,7 @@ export default function Home() {
 
   const [peakNetForce, setPeakNetForce] = useState(0);
   const [peakPressure, setPeakPressure] = useState(0);
-  const [dataPointCounter, setDataPointCounter] = useState(0);
+  const [startTime, setStartTime] = useState<number | null>(null);
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
 
@@ -117,11 +117,22 @@ export default function Home() {
     const newLoadCellData: DataPoint[] = [];
     const newPressureData: PressureDataPoint[] = [];
 
+    // Set start time from first data point if not already set
+    let currentStartTime = startTime;
+    if (currentStartTime === null && processedRows.length > 0) {
+      currentStartTime = new Date(processedRows[0].timestamp).getTime();
+      setStartTime(currentStartTime);
+    }
+
     processedRows.forEach(row => {
-      const discreteTimestamp = dataPointCounter + newLoadCellData.length;
+      // Calculate runtime in seconds from QuestDB timestamp
+      const dataPointTime = new Date(row.timestamp).getTime();
+      const runtimeSeconds = currentStartTime !== null
+        ? (dataPointTime - currentStartTime) / 1000
+        : 0;
 
       const loadCellPoint: DataPoint = {
-        timestamp: discreteTimestamp,
+        timestamp: runtimeSeconds,
         cell1: row.cell1_force || 0,
         cell2: row.cell2_force || 0,
         cell3: row.cell3_force || 0,
@@ -129,15 +140,13 @@ export default function Home() {
       };
 
       const pressurePoint: PressureDataPoint = {
-        timestamp: discreteTimestamp,
+        timestamp: runtimeSeconds,
         pressure: row.pressure_pt1 || 0
       };
 
       newLoadCellData.push(loadCellPoint);
       newPressureData.push(pressurePoint);
     });
-
-    setDataPointCounter(prev => prev + newLoadCellData.length);
 
     // Update complete datasets
     setCompleteGraphData(prev => [...prev, ...newLoadCellData]);
@@ -476,16 +485,20 @@ export default function Home() {
                         stroke="rgba(255,255,255,0.05)" 
                         vertical={false}
                       />
-                      <XAxis 
-                        dataKey="timestamp" 
+                      <XAxis
+                        dataKey="timestamp"
                         stroke="rgba(255,255,255,0.3)"
                         tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
-                        interval="preserveStartEnd"
-                        allowDataOverflow={true}
+                        type="number"
                         domain={['dataMin', 'dataMax']}
                         axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
                         tickLine={{ stroke: 'rgba(255,255,255,0.1)' }}
-                        tickCount={5}
+                        allowDecimals={false}
+                        interval={0}
+                        ticks={graphData.length > 0 ? Array.from(
+                          { length: Math.floor(graphData[graphData.length - 1].timestamp) - Math.floor(graphData[0].timestamp) + 1 },
+                          (_, i) => Math.floor(graphData[0].timestamp) + i
+                        ) : undefined}
                         tickFormatter={(value) => `${value}s`}
                       />
                       <YAxis 
@@ -626,16 +639,20 @@ export default function Home() {
                           stroke="rgba(255,255,255,0.05)" 
                           vertical={false}
                         />
-                        <XAxis 
-                          dataKey="timestamp" 
+                        <XAxis
+                          dataKey="timestamp"
                           stroke="rgba(255,255,255,0.3)"
                           tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
-                          interval="preserveStartEnd"
-                          allowDataOverflow={true}
+                          type="number"
                           domain={['dataMin', 'dataMax']}
                           axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
                           tickLine={{ stroke: 'rgba(255,255,255,0.1)' }}
-                          tickCount={5}
+                          allowDecimals={false}
+                          interval={0}
+                          ticks={pressureData.length > 0 ? Array.from(
+                            { length: Math.floor(pressureData[pressureData.length - 1].timestamp) - Math.floor(pressureData[0].timestamp) + 1 },
+                            (_, i) => Math.floor(pressureData[0].timestamp) + i
+                          ) : undefined}
                           tickFormatter={(value) => `${value}s`}
                         />
                         <YAxis 
