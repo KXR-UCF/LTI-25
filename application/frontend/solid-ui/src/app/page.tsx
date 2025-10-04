@@ -534,11 +534,11 @@ export default function Home() {
                         iconType="circle"
                         iconSize={8}
                       />
-                      <Line 
-                        type="basis" 
-                        dataKey="cell1" 
+                      <Line
+                        type="linear"
+                        dataKey="cell1"
                         name="Load Cell 1"
-                        stroke="#10B981" 
+                        stroke="#10B981"
                         strokeWidth={2}
                         dot={false}
                         activeDot={{ r: 4, fill: '#10B981', stroke: 'white', strokeWidth: 2 }}
@@ -546,11 +546,11 @@ export default function Home() {
                         connectNulls={true}
                         filter="url(#glowCell1)"
                       />
-                      <Line 
-                        type="basis" 
-                        dataKey="cell2" 
+                      <Line
+                        type="linear"
+                        dataKey="cell2"
                         name="Load Cell 2"
-                        stroke="#F59E0B" 
+                        stroke="#F59E0B"
                         strokeWidth={2}
                         dot={false}
                         activeDot={{ r: 4, fill: '#F59E0B', stroke: 'white', strokeWidth: 2 }}
@@ -558,11 +558,11 @@ export default function Home() {
                         connectNulls={true}
                         filter="url(#glowCell2)"
                       />
-                      <Line 
-                        type="basis" 
-                        dataKey="cell3" 
+                      <Line
+                        type="linear"
+                        dataKey="cell3"
                         name="Load Cell 3"
-                        stroke="#EF4444" 
+                        stroke="#EF4444"
                         strokeWidth={2}
                         dot={false}
                         activeDot={{ r: 4, fill: '#EF4444', stroke: 'white', strokeWidth: 2 }}
@@ -570,11 +570,11 @@ export default function Home() {
                         connectNulls={true}
                         filter="url(#glowCell3)"
                       />
-                      <Line 
-                        type="basis" 
-                        dataKey="total" 
+                      <Line
+                        type="linear"
+                        dataKey="total"
                         name="Net Force"
-                        stroke="#3B82F6" 
+                        stroke="#3B82F6"
                         strokeWidth={2}
                         dot={false}
                         activeDot={{ r: 4, fill: '#3B82F6', stroke: 'white', strokeWidth: 2 }}
@@ -689,11 +689,11 @@ export default function Home() {
                           iconType="circle"
                           iconSize={8}
                         />
-                        <Line 
-                          type="basis" 
-                          dataKey="pressure" 
+                        <Line
+                          type="linear"
+                          dataKey="pressure"
                           name="Pressure Transducer"
-                          stroke="#8B5CF6" 
+                          stroke="#8B5CF6"
                           strokeWidth={2}
                           dot={false}
                           activeDot={{ r: 4, fill: '#8B5CF6', stroke: 'white', strokeWidth: 2 }}
