@@ -4,6 +4,11 @@ import Image from "next/image";
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import html2canvas from 'html2canvas';
+import LaunchKey from "./Components/LaunchKey";
+import AbortSystem from "./Components/AbortSystem";
+import LaunchButton from "./Components/LaunchButton";
+import ContinuityTest from "./Components/ContinuityTest";
+import TelemetryReadings from "./Components/TelemetryReadings";
 
 
 
@@ -693,51 +698,13 @@ export default function Home() {
           </div>
 
           {/* Right Column - Telemetry and Controls */}
-          <div className="flex flex-col gap-2 h-full">
+          <div className="flex flex-col gap-2 h-full"></div>
             {/* Telemetry Readings */}
-            <div className="bg-gradient-to-b from-gray-900/50 to-gray-900/30 rounded-lg border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-sm flex-1">
-              <div className="p-2 h-full flex flex-col">
-                <h2 className="text-lg font-bold text-white/90 tracking-wider mb-2">MEASUREMENTS</h2>
-                <div className="flex-1 grid grid-cols-2 gap-2 w-full">
-                  {['total', 'pressure', 'peakNetForce', 'peakPressure'].map((sensor) => (
-                    <div key={sensor} className="bg-gradient-to-b from-gray-900/40 to-gray-900/20 rounded-lg border border-white/10 p-2 shadow-[0_0_10px_rgba(255,255,255,0.05)] flex flex-col justify-between">
-                      <div className="flex justify-between items-start">
-                        <p className="text-xs font-medium text-white tracking-wider leading-tight">
-                          {sensor === 'total' ? 'NET FORCE' : 
-                           sensor === 'pressure' ? 'PRES' : 
-                           sensor === 'peakNetForce' ? 'PEAK NET' : 
-                           'PEAK PRES'}
-                        </p>
-                        <div className={`w-3 h-3 rounded-full flex items-center justify-center ${
-                          latestData[sensor] ? 'bg-green-500/20 shadow-[0_0_3px_rgba(16,185,129,0.5)]' : 'bg-red-500/20 shadow-[0_0_3px_rgba(239,68,68,0.5)]'
-                        }`}>
-                          <div className={`w-1.5 h-1.5 rounded-full ${
-                            latestData[sensor] ? 'bg-green-500 shadow-[0_0_3px_rgba(16,185,129,0.8)]' : 'bg-red-500 shadow-[0_0_3px_rgba(239,68,68,0.8)]'
-                          }`}></div>
-                        </div>
-                      </div>
-                      <div className="flex-1 flex items-center justify-center">
-                        <div className="text-center">
-                          <p className="text-sm font-bold text-white">
-                            {sensor === 'peakNetForce' ? peakNetForce.toFixed(2) :
-                             sensor === 'peakPressure' ? peakPressure.toFixed(2) :
-                             latestData[sensor] ? 
-                              `${latestData[sensor].toFixed(2)}` : 
-                              '--'}
-                          </p>
-                          <p className="text-xs text-white/70">
-                            {sensor === 'pressure' || sensor === 'peakPressure' ? 'PSI' : 'N'}
-                          </p>
-                        </div>
-                      </div>
-                      <p className="text-xs text-white/70 text-center">
-                        {latestData[sensor] ? 'ACTIVE' : 'INACTIVE'}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <TelemetryReadings
+              latestData = {latestData}
+              peakNetForce = {peakNetForce}
+              peakPressure = {peakPressure}
+            />
 
             {/* System Controls */}
             <div className="bg-gradient-to-b from-gray-900/50 to-gray-900/30 rounded-lg border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-sm flex-1">
@@ -747,111 +714,34 @@ export default function Home() {
                 </div>
                 <div className="flex-1 grid grid-cols-2 gap-2">
                   {/* Continuity Test */}
-                  <div 
-                    onClick={() => toggleSwitch('continuity')}
-                    className={`flex flex-col p-4 rounded-lg transition-all duration-300 border cursor-pointer ${
-                      switchStates.continuity 
-                        ? 'bg-gradient-to-b from-green-900/40 to-green-900/20 border-green-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]' 
-                        : 'bg-gradient-to-b from-red-900/40 to-red-900/20 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]'
-                    }`}
-                  >
-                    <div className="flex justify-between items-center mb-4">
-                      <p className="text-sm font-medium text-white tracking-wider">CONTINUITY</p>
-                      <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
-                        switchStates.continuity ? 'bg-green-500/20 shadow-[0_0_5px_rgba(16,185,129,0.5)]' : 'bg-red-500/20 shadow-[0_0_5px_rgba(239,68,68,0.5)]'
-                      }`}>
-                        <div className={`w-2 h-2 rounded-full ${
-                          switchStates.continuity ? 'bg-green-500 shadow-[0_0_5px_rgba(16,185,129,0.8)]' : 'bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)]'
-                        }`}></div>
-                      </div>
-                    </div>
-                    <div className="flex-1 flex items-center justify-center">
-                      <p className="text-lg font-bold text-white">
-                        {switchStates.continuity ? 'ACTIVE' : 'INACTIVE'}
-                      </p>
-                    </div>
-                  </div>
+                  <ContinuityTest
+                    toggleSwitch = {toggleSwitch}
+                    switchStates = {switchStates}
+                  />   
 
                   {/* Launch Key */}
-                  <div 
-                    onClick={() => toggleSwitch('launchKey')}
-                    className={`flex flex-col p-4 rounded-lg transition-all duration-300 border cursor-pointer ${
-                      switchStates.launchKey 
-                        ? 'bg-gradient-to-b from-green-900/40 to-green-900/20 border-green-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]' 
-                        : 'bg-gradient-to-b from-red-900/40 to-red-900/20 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]'
-                    }`}
-                  >
-                    <div className="flex justify-between items-center mb-4">
-                      <p className="text-sm font-medium text-white tracking-wider">LAUNCH KEY</p>
-                      <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
-                        switchStates.launchKey ? 'bg-green-500/20 shadow-[0_0_5px_rgba(16,185,129,0.5)]' : 'bg-red-500/20 shadow-[0_0_5px_rgba(239,68,68,0.5)]'
-                      }`}>
-                        <div className={`w-2 h-2 rounded-full ${
-                          switchStates.launchKey ? 'bg-green-500 shadow-[0_0_5px_rgba(16,185,129,0.8)]' : 'bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)]'
-                        }`}></div>
-                      </div>
-                    </div>
-                    <div className="flex-1 flex items-center justify-center">
-                      <p className="text-lg font-bold text-white">
-                        {switchStates.launchKey ? 'ACTIVE' : 'INACTIVE'}
-                      </p>
-                    </div>
-                  </div>
+                  <LaunchKey
+                    toggleSwitch = {toggleSwitch}
+                    switchStates = {switchStates}
+                  />
 
                   {/* Abort System */}
-                  <div 
-                    onClick={() => toggleSwitch('abort')}
-                    className={`col-span-2 flex flex-col p-4 rounded-lg transition-all duration-300 border cursor-pointer ${
-                      switchStates.abort 
-                        ? 'bg-gradient-to-b from-red-900/40 to-red-900/20 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]' 
-                        : 'bg-gradient-to-b from-red-900/40 to-red-900/20 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]'
-                    }`}
-                  >
-                    <div className="flex justify-between items-center mb-4">
-                      <p className="text-sm font-medium text-white tracking-wider">ABORT SYSTEM</p>
-                      <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
-                        switchStates.abort ? 'bg-red-500/20 shadow-[0_0_5px_rgba(239,68,68,0.5)]' : 'bg-red-500/20 shadow-[0_0_5px_rgba(239,68,68,0.5)]'
-                      }`}>
-                        <div className={`w-2 h-2 rounded-full ${
-                          switchStates.abort ? 'bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)]' : 'bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)]'
-                        }`}></div>
-                      </div>
-                    </div>
-                    <div className="flex-1 flex items-center justify-center">
-                      <p className="text-lg font-bold text-white">
-                        {switchStates.abort ? 'ENGAGED' : 'STANDBY'}
-                      </p>
-                    </div>
-                  </div>
+                  <AbortSystem
+                    toggleSwitch = {toggleSwitch}
+                    switchStates = {switchStates}
+                  />
 
                   {/* Launch Button */}
-                  <button
-                    onClick={handleLaunch}
-                    disabled={!canLaunch}
-                    className={`col-span-2 w-full py-6 px-6 rounded-lg transition-all duration-300 ${
-                      canLaunch
-                        ? 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-[0_0_20px_rgba(59,130,246,0.5)] hover:shadow-[0_0_30px_rgba(59,130,246,0.7)]'
-                        : 'bg-gradient-to-r from-gray-700 to-gray-600 text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center gap-3">
-                      <span className="text-2xl font-bold tracking-wider">FIRE</span>
-                      {canLaunch && (
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                      )}
-                    </div>
-                    <p className="text-sm text-center mt-3 opacity-75">
-                      {canLaunch ? 'All systems ready for launch' : 'Systems not ready'}
-                    </p>
-                  </button>
+                  <LaunchButton
+                    handleLaunch = {handleLaunch}
+                    canLaunch = {canLaunch}
+                  />
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      {/*</div>*/}
     </main>
   );
 }
