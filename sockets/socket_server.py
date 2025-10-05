@@ -1,5 +1,8 @@
 import RPi.GPIO as GPIO
 from time import sleep
+import json
+
+SWITCH_STATE_FILENAME = 'switch_states.json'
 
 pinRELAY = 5 #Nox Fill
 pinRELAY2 = 6 #Nox Vent
@@ -102,6 +105,38 @@ try:
         # with open("received_data.txt", "a") as file:
         #     file.write(received_data + "\n")
 
+        # update state file
+        with open(SWITCH_STATE_FILENAME, 'r') as f:
+            switch_states = json.load(f)
+
+        switch = None
+        switch_state = None
+        if msg[0].isdigit():
+            switch = msg[0]
+            if msg[2:] == "Open":
+                switch_state = True
+            elif msg[2:] == "Close":
+                switch_state = False
+            else:
+                print(f"Not open or closed: msg:<{msg}>")
+
+        elif msg == "ENABLE FIRE" or msg == "DISABLE FIRE":
+            switch = "enable_fire"
+            switch_state = (msg == "ENABLE FIRE")
+
+        elif msg == "FIRE":
+            switch = msg.lower()
+            switch_state = True
+
+        switch_states[switch] = switch_state
+
+        with open(SWITCH_STATE_FILENAME, 'w') as f:
+            switch_states = json.dump(f, indent=4, sort_keys=True)
+
+        # respond to client
+        client_socket.send(f"ACK: {msg}")
+
+
 except KeyboardInterrupt:
     print("Server interrupted by user.")
 
@@ -119,3 +154,13 @@ finally:
     print("Closing connection...")
     client_socket.close()
     server_socket.close()
+
+    # clear state file
+    with open(SWITCH_STATE_FILENAME, 'r') as f:
+        switch_states = json.load(f)
+
+    for key in switch_states.keys():
+        switch_states[key] = False
+
+    with open(SWITCH_STATE_FILENAME, 'w') as f:
+        switch_states = json.dump(f, indent=4, sort_keys=True)
