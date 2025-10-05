@@ -1,11 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import html2canvas from 'html2canvas';
-
-
 
 interface DataPoint {
   timestamp: number;
@@ -46,7 +43,12 @@ interface LatestData {
   [key: string]: number | undefined;
 }
 
-export default function Home() {
+interface SolidUIProps {
+  telemetryData: TelemetryRow[];
+  connectionStatus: 'disconnected' | 'connecting' | 'connected';
+}
+
+export default function SolidUI({ telemetryData, connectionStatus }: SolidUIProps) {
   const [graphData, setGraphData] = useState<DataPoint[]>([]);
   const [pressureData, setPressureData] = useState<PressureDataPoint[]>([]);
   const [switchStates, setSwitchStates] = useState({
@@ -59,8 +61,6 @@ export default function Home() {
   const [peakPressure, setPeakPressure] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
-  const [ws, setWs] = useState<WebSocket | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
 
   // Add toggle handler for switches
   const toggleSwitch = (switchName: keyof typeof switchStates) => {
@@ -188,35 +188,35 @@ export default function Home() {
       if (isLoadCell) {
         const originalData = graphData;
         setGraphData(completeGraphData);
-        
+
         setTimeout(() => {
           const chartContainer = document.getElementById('load-cell-chart');
           if (!chartContainer) return;
-          
+
           // Get both the SVG and the legend
           const svgElement = chartContainer.querySelector('svg');
           const legendElement = chartContainer.querySelector('.recharts-legend-wrapper');
-          
+
           if (svgElement) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            
+
             if (ctx) {
               canvas.width = 1200 * 2;
               canvas.height = 650 * 2; // Increased height for legend
               ctx.scale(2, 2);
               ctx.fillStyle = '#111827';
               ctx.fillRect(0, 0, 1200, 650);
-              
+
               // First draw the main chart SVG
               const svgData = new XMLSerializer().serializeToString(svgElement);
               const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
               const svgUrl = URL.createObjectURL(svgBlob);
-              
+
               const img = document.createElement('img') as HTMLImageElement;
               img.onload = () => {
                 ctx.drawImage(img, 0, 0, 1200, 600);
-                
+
                 // Add legend text manually
                 if (legendElement) {
                   ctx.fillStyle = 'rgba(255,255,255,0.7)';
@@ -226,21 +226,21 @@ export default function Home() {
                   ctx.beginPath();
                   ctx.arc(40, 616, 4, 0, 2 * Math.PI);
                   ctx.fill();
-                  
+
                   ctx.fillStyle = 'rgba(255,255,255,0.7)';
                   ctx.fillText('Load Cell 2', 150, 620);
                   ctx.fillStyle = '#F59E0B';
                   ctx.beginPath();
                   ctx.arc(140, 616, 4, 0, 2 * Math.PI);
                   ctx.fill();
-                  
+
                   ctx.fillStyle = 'rgba(255,255,255,0.7)';
                   ctx.fillText('Load Cell 3', 250, 620);
                   ctx.fillStyle = '#EF4444';
                   ctx.beginPath();
                   ctx.arc(240, 616, 4, 0, 2 * Math.PI);
                   ctx.fill();
-                  
+
                   ctx.fillStyle = 'rgba(255,255,255,0.7)';
                   ctx.fillText('Net Force', 350, 620);
                   ctx.fillStyle = '#3B82F6';
@@ -248,7 +248,7 @@ export default function Home() {
                   ctx.arc(340, 616, 4, 0, 2 * Math.PI);
                   ctx.fill();
                 }
-                
+
                 canvas.toBlob((blob) => {
                   if (blob) {
                     const url = URL.createObjectURL(blob);
@@ -259,7 +259,7 @@ export default function Home() {
                     URL.revokeObjectURL(url);
                   }
                 });
-                
+
                 URL.revokeObjectURL(svgUrl);
                 setGraphData(originalData);
               };
@@ -270,33 +270,33 @@ export default function Home() {
       } else {
         const originalData = pressureData;
         setPressureData(completePressureData);
-        
+
         setTimeout(() => {
           const chartContainer = document.getElementById('pressure-chart');
           if (!chartContainer) return;
-          
+
           const svgElement = chartContainer.querySelector('svg');
           const legendElement = chartContainer.querySelector('.recharts-legend-wrapper');
-          
+
           if (svgElement) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            
+
             if (ctx) {
               canvas.width = 1200 * 2;
               canvas.height = 650 * 2;
               ctx.scale(2, 2);
               ctx.fillStyle = '#111827';
               ctx.fillRect(0, 0, 1200, 650);
-              
+
               const svgData = new XMLSerializer().serializeToString(svgElement);
               const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
               const svgUrl = URL.createObjectURL(svgBlob);
-              
+
               const img = document.createElement('img') as HTMLImageElement;
               img.onload = () => {
                 ctx.drawImage(img, 0, 0, 1200, 600);
-                
+
                 // Add pressure legend manually
                 if (legendElement) {
                   ctx.fillStyle = 'rgba(255,255,255,0.7)';
@@ -307,7 +307,7 @@ export default function Home() {
                   ctx.arc(40, 616, 4, 0, 2 * Math.PI);
                   ctx.fill();
                 }
-                
+
                 canvas.toBlob((blob) => {
                   if (blob) {
                     const url = URL.createObjectURL(blob);
@@ -318,7 +318,7 @@ export default function Home() {
                     URL.revokeObjectURL(url);
                   }
                 });
-                
+
                 URL.revokeObjectURL(svgUrl);
                 setPressureData(originalData);
               };
@@ -343,57 +343,24 @@ export default function Home() {
     exportCompleteChart(completePressureData, `pressure-complete-session-${timestamp}`, false);
   };
 
-  // WebSocket connection setup
+  // Reset state when component mounts
   useEffect(() => {
-    const connectWebSocket = () => {
-      setConnectionStatus('connecting');
-      const websocket = new WebSocket('ws://localhost:8080');
-
-      websocket.onopen = () => {
-        console.log('WebSocket connected');
-        setConnectionStatus('connected');
-        setWs(websocket);
-      };
-
-      websocket.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          if (message.type === 'telemetry_update' && message.data) {
-            console.log('Received telemetry update:', message.data.length, 'rows');
-            processTelemetryData(message.data);
-          }
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
-        }
-      };
-
-      websocket.onclose = () => {
-        console.log('WebSocket disconnected');
-        setConnectionStatus('disconnected');
-        setWs(null);
-
-        // Attempt to reconnect after 3 seconds
-        setTimeout(() => {
-          if (websocket.readyState === WebSocket.CLOSED) {
-            connectWebSocket();
-          }
-        }, 3000);
-      };
-
-      websocket.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        setConnectionStatus('disconnected');
-      };
-    };
-
-    connectWebSocket();
-
-    return () => {
-      if (ws) {
-        ws.close();
-      }
-    };
+    setGraphData([]);
+    setPressureData([]);
+    setCompleteGraphData([]);
+    setCompletePressureData([]);
+    setPeakNetForce(0);
+    setPeakPressure(0);
+    setStartTime(null);
+    startTimeRef.current = null;
   }, []);
+
+  // Process telemetry data when received from parent
+  useEffect(() => {
+    if (telemetryData.length > 0) {
+      processTelemetryData(telemetryData);
+    }
+  }, [telemetryData]);
 
 
   return (
@@ -480,9 +447,9 @@ export default function Home() {
                           </feMerge>
                         </filter>
                       </defs>
-                      <CartesianGrid 
-                        strokeDasharray="3 3" 
-                        stroke="rgba(255,255,255,0.05)" 
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="rgba(255,255,255,0.05)"
                         vertical={false}
                       />
                       <XAxis
@@ -501,7 +468,7 @@ export default function Home() {
                         ) : undefined}
                         tickFormatter={(value) => `${value}s`}
                       />
-                      <YAxis 
+                      <YAxis
                         stroke="rgba(255,255,255,0.3)"
                         tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
                         domain={[0, 1000]}
@@ -510,8 +477,8 @@ export default function Home() {
                         axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
                         tickLine={{ stroke: 'rgba(255,255,255,0.1)' }}
                       />
-                      <Tooltip 
-                        contentStyle={{ 
+                      <Tooltip
+                        contentStyle={{
                           backgroundColor: 'rgba(17, 24, 39, 0.95)',
                           border: '1px solid rgba(255,255,255,0.1)',
                           borderRadius: '0.375rem',
@@ -523,7 +490,7 @@ export default function Home() {
                         labelFormatter={(label) => `Runtime: ${label}s`}
                         cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
                       />
-                      <Legend 
+                      <Legend
                         wrapperStyle={{
                           paddingTop: '10px',
                           color: 'rgba(255,255,255,0.7)'
@@ -588,7 +555,7 @@ export default function Home() {
               </div>
             </div>
             </div>
-            
+
             {/* Pressure Transducer Graph */}
             <div className="bg-gradient-to-b from-gray-900/50 to-gray-900/30 rounded-lg border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-sm flex flex-col">
               <div className="p-4 flex-none">
@@ -634,9 +601,9 @@ export default function Home() {
                             </feMerge>
                           </filter>
                         </defs>
-                        <CartesianGrid 
-                          strokeDasharray="3 3" 
-                          stroke="rgba(255,255,255,0.05)" 
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="rgba(255,255,255,0.05)"
                           vertical={false}
                         />
                         <XAxis
@@ -655,7 +622,7 @@ export default function Home() {
                           ) : undefined}
                           tickFormatter={(value) => `${value}s`}
                         />
-                        <YAxis 
+                        <YAxis
                           stroke="rgba(255,255,255,0.3)"
                           tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
                           domain={[0, 2400]}
@@ -665,8 +632,8 @@ export default function Home() {
                           axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
                           tickLine={{ stroke: 'rgba(255,255,255,0.1)' }}
                         />
-                        <Tooltip 
-                          contentStyle={{ 
+                        <Tooltip
+                          contentStyle={{
                             backgroundColor: 'rgba(17, 24, 39, 0.95)',
                             border: '1px solid rgba(255,255,255,0.1)',
                             borderRadius: '0.375rem',
@@ -678,7 +645,7 @@ export default function Home() {
                           labelFormatter={(label) => `Runtime: ${label}s`}
                           cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
                         />
-                        <Legend 
+                        <Legend
                           wrapperStyle={{
                             paddingTop: '10px',
                             color: 'rgba(255,255,255,0.7)'
@@ -720,9 +687,9 @@ export default function Home() {
                     <div key={sensor} className="bg-gradient-to-b from-gray-900/40 to-gray-900/20 rounded-lg border border-white/10 p-2 shadow-[0_0_10px_rgba(255,255,255,0.05)] flex flex-col justify-between">
                       <div className="flex justify-between items-start">
                         <p className="text-xs font-medium text-white tracking-wider leading-tight">
-                          {sensor === 'total' ? 'NET FORCE' : 
-                           sensor === 'pressure' ? 'PRES' : 
-                           sensor === 'peakNetForce' ? 'PEAK NET' : 
+                          {sensor === 'total' ? 'NET FORCE' :
+                           sensor === 'pressure' ? 'PRES' :
+                           sensor === 'peakNetForce' ? 'PEAK NET' :
                            'PEAK PRES'}
                         </p>
                         <div className={`w-3 h-3 rounded-full flex items-center justify-center ${
@@ -738,8 +705,8 @@ export default function Home() {
                           <p className="text-sm font-bold text-white">
                             {sensor === 'peakNetForce' ? peakNetForce.toFixed(2) :
                              sensor === 'peakPressure' ? peakPressure.toFixed(2) :
-                             latestData[sensor] ? 
-                              `${latestData[sensor].toFixed(2)}` : 
+                             latestData[sensor] ?
+                              `${latestData[sensor].toFixed(2)}` :
                               '--'}
                           </p>
                           <p className="text-xs text-white/70">
@@ -764,11 +731,11 @@ export default function Home() {
                 </div>
                 <div className="flex-1 grid grid-cols-2 gap-2">
                   {/* Continuity Test */}
-                  <div 
+                  <div
                     onClick={() => toggleSwitch('continuity')}
                     className={`flex flex-col p-4 rounded-lg transition-all duration-300 border cursor-pointer ${
-                      switchStates.continuity 
-                        ? 'bg-gradient-to-b from-green-900/40 to-green-900/20 border-green-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]' 
+                      switchStates.continuity
+                        ? 'bg-gradient-to-b from-green-900/40 to-green-900/20 border-green-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
                         : 'bg-gradient-to-b from-red-900/40 to-red-900/20 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]'
                     }`}
                   >
@@ -790,11 +757,11 @@ export default function Home() {
                   </div>
 
                   {/* Launch Key */}
-                  <div 
+                  <div
                     onClick={() => toggleSwitch('launchKey')}
                     className={`flex flex-col p-4 rounded-lg transition-all duration-300 border cursor-pointer ${
-                      switchStates.launchKey 
-                        ? 'bg-gradient-to-b from-green-900/40 to-green-900/20 border-green-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]' 
+                      switchStates.launchKey
+                        ? 'bg-gradient-to-b from-green-900/40 to-green-900/20 border-green-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
                         : 'bg-gradient-to-b from-red-900/40 to-red-900/20 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]'
                     }`}
                   >
@@ -816,11 +783,11 @@ export default function Home() {
                   </div>
 
                   {/* Abort System */}
-                  <div 
+                  <div
                     onClick={() => toggleSwitch('abort')}
                     className={`col-span-2 flex flex-col p-4 rounded-lg transition-all duration-300 border cursor-pointer ${
-                      switchStates.abort 
-                        ? 'bg-gradient-to-b from-red-900/40 to-red-900/20 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]' 
+                      switchStates.abort
+                        ? 'bg-gradient-to-b from-red-900/40 to-red-900/20 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]'
                         : 'bg-gradient-to-b from-red-900/40 to-red-900/20 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]'
                     }`}
                   >

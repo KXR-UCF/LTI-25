@@ -47,8 +47,8 @@ CREATE TABLE telemetry_data (
 
 ### 4. Start WebSocket Server (Backend)
 ```bash
-cd solid-ui/backend/
-npm install ws pg
+cd backend/
+npm install
 npm start
 ```
 - Server runs on port 8080
@@ -56,12 +56,13 @@ npm start
 
 ### 5. Start Frontend Interface
 ```bash
-cd solid-ui/frontend/
+cd frontend/solid-ui/
 npm install
 npm run dev
 ```
 - Interface available at http://localhost:3000
 - Connects to WebSocket server automatically
+- Click "Switch UI" button to toggle between Solid UI and Liquid UI modes
 
 
 ## Shutting Down the System
