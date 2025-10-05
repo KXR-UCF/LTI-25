@@ -11,7 +11,7 @@ try:
         # receive data from the server and decoding to get the string.
         msg = ser.readline().decode().strip().encode()
 
-        if msg == '':
+        if len(msg) == 0:
             continue
 
         s.send(msg)
@@ -21,9 +21,6 @@ try:
         # check for response
         response_ack = False
         while not response_ack:
-            response_msg = s.recv(1024)
-            response_ack = (response_msg == f"ACK: {msg}")
-            
             # if no response within a second, retry send message
             if time.time() - send_time >= 1:
                 s.send(msg)
@@ -34,6 +31,13 @@ try:
             if attempts > 5:
                 print(f"No response | msg:<{msg}>")
                 break
+            # check for response
+            response_msg = s.recv(1024)
+            response_ack = (response_msg == f"ACK: {msg}")
+
+        # do something after a successful response
+        if response_ack:
+            pass
 
 except KeyboardInterrupt:
     print("Interrupted by user")
