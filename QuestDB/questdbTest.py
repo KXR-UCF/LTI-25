@@ -1,13 +1,11 @@
 #!/usr/bin/python
 
-# import ADS1256
 import numpy as np
-# import RPi.GPIO as GPIO
 from questdb.ingress import Sender, Protocol
-# import pandas as pd
 from datetime import datetime
 
 import daqmanager
+# import time
 
 
 rows = [
@@ -30,24 +28,30 @@ conf = (
     'http::addr=localhost:9000;'
     'username=admin;'
     'password=quest;'
-    'auto_flush=on'
-    'auto_flush_rows=100;'
-    'auto_flush_interval=1000;'
+    'auto_flush=on;'
+    'auto_flush_rows=1;'
+    # 'auto_flush_interval=1000;'
     )
-
-
 
 # try:
 
 adc_manager = daqmanager.AdcManager()
 load_cell_manager = daqmanager.LoadCells(adc_manager)
-load_cell_manager.calibrate_tares()
-
-# with Sender(Protocol.Http, 'localhost', 9000, username='admin', password='quest', auto_flush=True, auto_flush_rows=60) as sender:
+# load_cell_manager.calibrate_tares()
 
 with Sender.from_conf(conf) as sender: # Allows for QuestDB insertion
+    # st = time.time()
     print("Connected to QuestDB")
-    while True:
+
+    enable_fire = False
+    while not enable_fire:
+        with open('EnableFire.txt', 'r') as file:
+            str_enable_fire = file.read()
+            enable_fire = str_enable_fire == 'True'
+            print(str_enable_fire)
+
+
+    while enable_fire:
 
         # get load cell values
         load_cell_values = load_cell_manager.get_all_forces()
@@ -60,11 +64,13 @@ with Sender.from_conf(conf) as sender: # Allows for QuestDB insertion
                 'cell1_force': float(load_cell_values[0]),
                 'cell2_force': float(load_cell_values[1]),
                 'cell3_force': float(load_cell_values[2]),
-                'net_force': float(netForce*100)
+                'net_force': float(netForce)
             },
             at=datetime.now()
         )
-        # sender.flush()
+        #
+        # if time.time() - st >= 10:
+        #     break
 
             # print('sent')
 # except Exception as e:
