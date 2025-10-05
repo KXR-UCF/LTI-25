@@ -105,10 +105,11 @@ try:
         # with open("received_data.txt", "a") as file:
         #     file.write(received_data + "\n")
 
-        # update state file
+        # get state file
         with open(SWITCH_STATE_FILENAME, 'r') as f:
             switch_states = json.load(f)
 
+        # update sate file
         switch = None
         switch_state = None
         if msg[0].isdigit():
