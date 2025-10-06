@@ -47,6 +47,9 @@ print(f"Server listening on {host}:{port}...")
 client_socket, client_address = server_socket.accept()
 print(f"Connection established with {client_address}")
 
+with open(SWITCH_STATE_FILENAME, 'w') as file:
+    json.dump({}, file, indent=4)
+
 try:
     while True:
         # Receive data from the client (up to 1024 bytes at a time)
@@ -105,37 +108,43 @@ try:
         # with open("received_data.txt", "a") as file:
         #     file.write(received_data + "\n")
 
-        # get state file
-        with open(SWITCH_STATE_FILENAME, 'r') as f:
-            switch_states = json.load(f)
+        try:
 
-        # update sate file
-        switch = None
-        switch_state = None
-        if msg[0].isdigit():
-            switch = msg[0]
-            if msg[2:] == "Open":
+            # get state file
+            with open(SWITCH_STATE_FILENAME, 'r') as f:
+                switch_states = json.load(f)
+
+            # update sate file
+            switch = None
+            switch_state = None
+            if msg[0].isdigit():
+                switch = msg[0]
+                if msg[2:] == "Open":
+                    switch_state = True
+                elif msg[2:] == "Close":
+                    switch_state = False
+                else:
+                    print(f"Not open or closed: msg:<{msg}>")
+
+            elif msg == "ENABLE FIRE" or msg == "DISABLE FIRE":
+                switch = "enable_fire"
+                switch_state = (msg == "ENABLE FIRE")
+
+            elif msg == "FIRE":
+                switch = msg.lower()
                 switch_state = True
-            elif msg[2:] == "Close":
-                switch_state = False
-            else:
-                print(f"Not open or closed: msg:<{msg}>")
 
-        elif msg == "ENABLE FIRE" or msg == "DISABLE FIRE":
-            switch = "enable_fire"
-            switch_state = (msg == "ENABLE FIRE")
+            switch_states[switch] = switch_state
 
-        elif msg == "FIRE":
-            switch = msg.lower()
-            switch_state = True
 
-        switch_states[switch] = switch_state
+            with open(SWITCH_STATE_FILENAME, 'w') as f:
+                json.dump(switch_states ,f, indent=4, sort_keys=True)
 
-        with open(SWITCH_STATE_FILENAME, 'w') as f:
-            switch_states = json.dump(f, indent=4, sort_keys=True)
+        except Exception as e:
+            print(e)
 
         # respond to client
-        client_socket.send(f"ACK: {msg}")
+        client_socket.send(f"ACK: {msg}".encode())
 
 
 except KeyboardInterrupt:
@@ -157,11 +166,15 @@ finally:
     server_socket.close()
 
     # clear state file
-    with open(SWITCH_STATE_FILENAME, 'r') as f:
-        switch_states = json.load(f)
+    try:
+        with open(SWITCH_STATE_FILENAME, 'r') as f:
+            switch_states = json.load(f)
 
-    for key in switch_states.keys():
-        switch_states[key] = False
 
-    with open(SWITCH_STATE_FILENAME, 'w') as f:
-        switch_states = json.dump(f, indent=4, sort_keys=True)
+        for key in switch_states.keys():
+            switch_states[key] = False
+
+        with open(SWITCH_STATE_FILENAME, 'w') as f:
+            switch_states = json.dump(f, indent=4, sort_keys=True)
+    except:
+        print("failed to clear switch state file")

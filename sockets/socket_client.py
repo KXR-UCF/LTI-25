@@ -3,7 +3,7 @@ import serial
 import time
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect(("192.168.1.9", 9600))                # ip address should probably be 192.168.1.7
+s.connect(("192.168.1.7", 9600))
 ser = serial.Serial("/dev/ttyACM0", 9600)       # baud rate probably should be 115200
 
 try:
@@ -33,11 +33,12 @@ try:
                 break
             # check for response
             response_msg = s.recv(1024)
-            response_ack = (response_msg == f"ACK: {msg}")
+            response_msg = response_msg.decode().strip()
+            response_ack = (response_msg == f"ACK: {msg.decode().strip()}")
 
         # do something after a successful response
         if response_ack:
-            pass
+            print(f"Received Response: {response_msg}")
 
 except KeyboardInterrupt:
     print("Interrupted by user")
