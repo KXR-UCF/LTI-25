@@ -4,7 +4,7 @@ import time
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(("192.168.1.7", 9600))
-ser = serial.Serial("/dev/ttyACM0", 9600)       # baud rate probably should be 115200
+ser = serial.Serial("/dev/ttyACM0", 9600)
 
 try:
     while True:
