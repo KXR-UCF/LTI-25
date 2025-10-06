@@ -3,10 +3,12 @@
 import numpy as np
 from questdb.ingress import Sender, Protocol
 from datetime import datetime
+import json
 
 import daqmanager
 # import time
 
+SWITCH_STATE_FILENAME = 'switch_states.json'
 
 rows = [
     "cell1_force",
@@ -25,7 +27,9 @@ rows = [
 ]
 
 conf = (
-    'http::addr=localhost:9000;'
+    'tcp::addr=localhost:9009;'
+    'protocol_version=2;'
+    # 'http::addr=localhost:9000;'
     'username=admin;'
     'password=quest;'
     'auto_flush=on;'
@@ -45,11 +49,13 @@ with Sender.from_conf(conf) as sender: # Allows for QuestDB insertion
 
     enable_fire = False
     while not enable_fire:
-        with open('EnableFire.txt', 'r') as file:
-            str_enable_fire = file.read()
-            enable_fire = str_enable_fire == 'True'
-            print(str_enable_fire)
+        # read state file
+        with open(SWITCH_STATE_FILENAME, 'r') as f:
+            switch_states = json.load(f)
 
+        # check enable fire state
+        if "enable_fire" in switch_states.keys():
+            enable_fire = switch_states[enable_fire]
 
     while enable_fire:
 
