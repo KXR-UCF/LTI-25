@@ -33,7 +33,7 @@ The raspberry pi 5 no longer supports the [`RPi.GPIO` Library](https://pypi.org/
 To use the library on a raspberry pi add the line `dtoverlay=spi0-0cs` to `/boot/firmware/config.txt` (or `/boot/firmware/config.txt` on older versions), removing any conflicting dtoverlays if necessary (comment out `dtparam=spi=on`). A longer explanation why this change is needed can be found in the [Pi Hat Folder](Pi%20Hat/).
 
 
-## daqmanager.py
+## adcmanager.py
 
 This module helps handle multiple sensors and maps them to their ADC and channel. The mapping and calibration values can be configured in the [`config.yaml` file](config.yaml). 
 
