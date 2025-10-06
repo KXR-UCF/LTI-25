@@ -9,7 +9,7 @@ A unified real-time telemetry system that monitors rocket engine performance thr
 
 ## Complete System Setup
 
-### 1. Install QuestDB
+### 1. Install QuestDB (WANDA)
 ```bash
 # macOS with Homebrew
 brew install questdb
@@ -17,14 +17,14 @@ brew install questdb
 # Alternative: Download from https://questdb.io/get-questdb/
 ```
 
-### 2. Start QuestDB Database
+### 2. Start QuestDB Database (WANDA)
 ```bash
 questdb start
 ```
 - Database runs on port 8812 (PGWire protocol)
 - Web console available at http://localhost:9000
 
-### 3. Create Database Table
+### 3. Create Database Table (WANDA)
 Open QuestDB web console (http://localhost:9000) and run:
 ```sql
 CREATE TABLE telemetry_data (
@@ -45,7 +45,7 @@ CREATE TABLE telemetry_data (
 ) TIMESTAMP(timestamp) PARTITION BY DAY;
 ```
 
-### 4. Start WebSocket Server (Backend)
+### 4. Start WebSocket Server (COSMO)
 ```bash
 cd backend/
 npm install
@@ -54,9 +54,9 @@ npm start
 - Server runs on port 8080
 - Polls database at 60Hz and broadcasts to clients
 
-### 5. Start Frontend Interface
+### 5. Start Frontend Interface (COSMO)
 ```bash
-cd frontend/solid-ui/
+cd frontend/frontend/
 npm install
 npm run dev
 ```
