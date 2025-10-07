@@ -28,6 +28,7 @@ export default function Home() {
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const telemetryUpdateCounterRef = useRef<number>(0);
 
   const switchUI = () => {
     setSolid(!solid);
@@ -53,8 +54,9 @@ export default function Home() {
       websocket.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
-          if (message.type === 'telemetry_update' && message.data) {
+          if (message.type === 'telemetry_update' && message.data && message.data.length > 0) {
             console.log('Received telemetry update:', message.data.length, 'rows');
+            telemetryUpdateCounterRef.current++;
             setTelemetryData(message.data);
           }
         } catch (error) {

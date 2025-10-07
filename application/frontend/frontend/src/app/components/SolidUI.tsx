@@ -61,6 +61,7 @@ export default function SolidUI({ telemetryData, connectionStatus }: SolidUIProp
   const [peakPressure, setPeakPressure] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
+  const lastProcessedLengthRef = useRef<number>(0);
 
   // Add toggle handler for switches
   const toggleSwitch = (switchName: keyof typeof switchStates) => {
@@ -357,8 +358,9 @@ export default function SolidUI({ telemetryData, connectionStatus }: SolidUIProp
 
   // Process telemetry data when received from parent
   useEffect(() => {
-    if (telemetryData.length > 0) {
+    if (telemetryData.length > 0 && telemetryData.length !== lastProcessedLengthRef.current) {
       processTelemetryData(telemetryData);
+      lastProcessedLengthRef.current = telemetryData.length;
     }
   }, [telemetryData]);
 

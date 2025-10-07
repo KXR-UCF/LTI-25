@@ -72,6 +72,7 @@ export default function LiquidUI({ telemetryData, connectionStatus }: LiquidUIPr
   const [weightLoadCell, setWeightLoadCell] = useState<number>(0);
   const [startTime, setStartTime] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
+  const lastProcessedLengthRef = useRef<number>(0);
   const [completeGraphData, setCompleteGraphData] = useState<DataPoint[]>([]);
   const [completePressureData, setCompletePressureData] = useState<PressureDataPoint[]>([]);
   const [completeThermalData, setCompleteThermalData] = useState<ThermalCoupleDataPoint[]>([]);
@@ -421,8 +422,9 @@ export default function LiquidUI({ telemetryData, connectionStatus }: LiquidUIPr
 
   // Process telemetry data when received from parent
   useEffect(() => {
-    if (telemetryData.length > 0) {
+    if (telemetryData.length > 0 && telemetryData.length !== lastProcessedLengthRef.current) {
       processTelemetryData(telemetryData);
+      lastProcessedLengthRef.current = telemetryData.length;
     }
   }, [telemetryData]);
 
