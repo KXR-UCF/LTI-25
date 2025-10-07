@@ -6,7 +6,7 @@ from datetime import datetime
 
 import adcmanager
 import json
-# import time
+import time
 
 
 rows = [
@@ -34,13 +34,14 @@ conf = (
     # 'auto_flush_interval=1000;'
     )
 
-SWITCH_STATE_FILENAME = 'switch_states.json'
+SWITCH_STATE_FILENAME = "switch_states.json"
 CONFIG_FILE_NAME = adcmanager.CONFIG_FILE_NAME
 
 load_cell_group1 = adcmanager.LoadCellGroup()
 load_cell_group1.add_all_from_config()
 load_cell_group1.calibrate_tares(num_samples=100)
 load_cell_group1.print_load_cells_information()
+
 
 try:
 
@@ -51,14 +52,19 @@ try:
         enable_fire = False
         while not enable_fire:
             # read state file
-            with open(SWITCH_STATE_FILENAME, 'r') as f:
-                switch_states = json.load(f)
+            try:
+                with open(SWITCH_STATE_FILENAME, 'r') as f:
+                    switch_states = json.load(f)
+                # check enable fire state
+                if "enable_fire" in switch_states.keys():
+                    enable_fire = switch_states["enable_fire"]
+                time.sleep(0.05)
+            except FileNotFoundError:
+                print("Waiting for switch state file")
 
-        # check enable fire state
-        if "enable_fire" in switch_states.keys():
-            enable_fire = switch_states[enable_fire]
-
-        while enable_fire:
+        print("Sending Data")
+        st = time.time()
+        while True:
 
             # get load cell values
             load_cell_group1_forces = load_cell_group1.get_all_forces()
@@ -76,8 +82,8 @@ try:
                 at=datetime.now()
             )
             #
-            # if time.time() - st >= 10:
-            #     break
+            if time.time() - st >= 7:
+                break
 
                 # print('sent')
 
