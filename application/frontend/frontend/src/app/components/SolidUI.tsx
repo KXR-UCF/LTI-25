@@ -462,13 +462,8 @@ export default function SolidUI({ telemetryData, connectionStatus }: SolidUIProp
                         domain={['dataMin', 'dataMax']}
                         axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
                         tickLine={{ stroke: 'rgba(255,255,255,0.1)' }}
-                        allowDecimals={false}
-                        interval={0}
-                        ticks={graphData.length > 0 ? Array.from(
-                          { length: Math.floor(graphData[graphData.length - 1].timestamp) - Math.floor(graphData[0].timestamp) + 1 },
-                          (_, i) => Math.floor(graphData[0].timestamp) + i
-                        ) : undefined}
-                        tickFormatter={(value) => `${value}s`}
+                        allowDecimals={true}
+                        tickFormatter={(value) => `${value.toFixed(1)}s`}
                       />
                       <YAxis
                         stroke="rgba(255,255,255,0.3)"
@@ -616,13 +611,8 @@ export default function SolidUI({ telemetryData, connectionStatus }: SolidUIProp
                           domain={['dataMin', 'dataMax']}
                           axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
                           tickLine={{ stroke: 'rgba(255,255,255,0.1)' }}
-                          allowDecimals={false}
-                          interval={0}
-                          ticks={pressureData.length > 0 ? Array.from(
-                            { length: Math.floor(pressureData[pressureData.length - 1].timestamp) - Math.floor(pressureData[0].timestamp) + 1 },
-                            (_, i) => Math.floor(pressureData[0].timestamp) + i
-                          ) : undefined}
-                          tickFormatter={(value) => `${value}s`}
+                          allowDecimals={true}
+                          tickFormatter={(value) => `${value.toFixed(1)}s`}
                         />
                         <YAxis
                           stroke="rgba(255,255,255,0.3)"
