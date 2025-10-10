@@ -63,6 +63,7 @@ CMD = {'CMD_WAKEUP' : 0x00,     # Completes SYNC and Exits Standby Mode 0000  00
       }
 
 SPI = spidev.SpiDev(0, 0)
+SPI.max_speed_hz = 1000000  # 1 MHz
 
 
 class ADS1256:
