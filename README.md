@@ -36,10 +36,10 @@ A comprehensive telemetry and data visualization system with multiple UI interfa
    ```bash
    cd frontend/application/liquid-ui
    npm install
-   
+
    cd ../solid-ui
    npm install
-   
+
    cd ../backend
    npm install
    ```
@@ -67,7 +67,7 @@ A comprehensive telemetry and data visualization system with multiple UI interfa
    ```bash
    cd frontend/application/liquid-ui
    npm run dev
-   
+
    # In another terminal
    cd frontend/application/solid-ui
    npm run dev

@@ -1,13 +1,12 @@
 #!/usr/bin/python
 
-# import ADS1256
 import numpy as np
-# import RPi.GPIO as GPIO
 from questdb.ingress import Sender, Protocol
-# import pandas as pd
 from datetime import datetime
 
-import daqmanager
+import adcmanager
+import json
+import time
 
 
 rows = [
@@ -30,43 +29,67 @@ conf = (
     'http::addr=localhost:9000;'
     'username=admin;'
     'password=quest;'
-    'auto_flush=on'
-    'auto_flush_rows=100;'
-    'auto_flush_interval=1000;'
+    'auto_flush=on;'
+    'auto_flush_rows=1;'
+    # 'auto_flush_interval=1000;'
     )
 
+SWITCH_STATE_FILENAME = "switch_states.json"
+CONFIG_FILE_NAME = adcmanager.CONFIG_FILE_NAME
+
+load_cell_group1 = adcmanager.LoadCellGroup()
+load_cell_group1.add_all_from_config()
+load_cell_group1.calibrate_tares(num_samples=100)
+load_cell_group1.print_load_cells_information()
 
 
-# try:
+try:
 
-adc_manager = daqmanager.AdcManager()
-load_cell_manager = daqmanager.LoadCells(adc_manager)
-load_cell_manager.calibrate_tares()
+    with Sender.from_conf(conf) as sender: # Allows for QuestDB insertion
+        # st = time.time()
+        print("Connected to QuestDB")
 
-# with Sender(Protocol.Http, 'localhost', 9000, username='admin', password='quest', auto_flush=True, auto_flush_rows=60) as sender:
+        enable_fire = False
+        while not enable_fire:
+            # read state file
+            try:
+                with open(SWITCH_STATE_FILENAME, 'r') as f:
+                    switch_states = json.load(f)
+                # check enable fire state
+                if "enable_fire" in switch_states.keys():
+                    enable_fire = switch_states["enable_fire"]
+                time.sleep(0.05)
+            except FileNotFoundError:
+                print("Waiting for switch state file")
 
-with Sender.from_conf(conf) as sender: # Allows for QuestDB insertion
-    print("Connected to QuestDB")
-    while True:
+        print("Sending Data")
+        st = time.time()
+        while True:
 
-        # get load cell values
-        load_cell_values = load_cell_manager.get_all_forces()
-        netForce = np.sum(load_cell_values)
+            # get load cell values
+            load_cell_group1_forces = load_cell_group1.get_all_forces()
+            load_cell_group1_netForce = np.sum(load_cell_group1_forces)
 
-        # send data and time to questDB
-        sender.row(
-            'telemetry_data',
-            columns = {
-                'cell1_force': float(load_cell_values[0]),
-                'cell2_force': float(load_cell_values[1]),
-                'cell3_force': float(load_cell_values[2]),
-                'net_force': float(netForce*100)
-            },
-            at=datetime.now()
-        )
-        # sender.flush()
+            # send data and time to questDB
+            sender.row(
+                'telemetry_data',
+                columns = {
+                    'cell1_force': float(load_cell_group1_forces[0]),
+                    'cell2_force': float(load_cell_group1_forces[1]),
+                    'cell3_force': float(load_cell_group1_forces[2]),
+                    'net_force': float(load_cell_group1_netForce)
+                },
+                at=datetime.now()
+            )
+            #
+            if time.time() - st >= 7:
+                break
 
-            # print('sent')
+                # print('sent')
+
+except KeyboardInterrupt:
+    print("Program interuppted by user")
+
 # except Exception as e:
 #     print(f"Unexpected error: {e}")
 #     GPIO.cleanup()
