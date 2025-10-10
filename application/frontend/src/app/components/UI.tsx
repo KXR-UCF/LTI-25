@@ -12,7 +12,7 @@ export default function UI({
 }: UIProps) {
     return (
         <>
-        
+            
         </>
     )
 }

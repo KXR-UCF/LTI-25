@@ -2,48 +2,17 @@
 
 import { useEffect, useState, useMemo, useRef } from "react";
 
+import { 
+    type TelemetryRow, 
+    type DataPoint, 
+    type PressureDataPoint, 
+    type LatestData 
+} from "../interfaces"
+
 import TelemetryReadings from "./TelemetryReadings";
 import Graphs from "./Graphs"
 import Controls from "./Controls"
 
-interface DataPoint {
-    timestamp: number;
-    cell1: number;
-    cell2: number;
-    cell3: number;
-    total: number;
-}
-
-interface PressureDataPoint {
-    timestamp: number;
-    pressure: number;
-}
-
-interface TelemetryRow {
-    timestamp: string;
-    cell1_force: number | null;
-    cell2_force: number | null;
-    cell3_force: number | null;
-    net_force: number | null;
-    pressure_pt1: number | null;
-    pressure_pt2: number | null;
-    pressure_pt3: number | null;
-    pressure_pt4: number | null;
-    pressure_pt5: number | null;
-    pressure_pt6: number | null;
-    weight_load_cell: number | null;
-    chamber_temp: number | null;
-    nozzle_temp: number | null;
-}
-
-interface LatestData {
-    cell1?: number;
-    cell2?: number;
-    cell3?: number;
-    total?: number;
-    pressure?: number;
-    [key: string]: number | undefined;
-}
 
 interface SolidUIProps {
     telemetryData: TelemetryRow[];
@@ -214,9 +183,7 @@ export default function SolidUI({
                             peakPressure={peakPressure}
                         />
 
-                        <Controls
-
-                        />
+                        <Controls />
                     </div>
                 </div>
             </div>
