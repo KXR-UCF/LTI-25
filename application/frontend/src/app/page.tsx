@@ -2,37 +2,16 @@
 
 import { useState, useEffect, useRef } from "react";
 
-import LiquidUI from "./components/LiquidUI";
-import SolidUI from "./components/SolidUI";
+import { type TelemetryRow } from "./interfaces"
 
-interface TelemetryRow {
-  timestamp: string;
-  cell1_force: number | null;
-  cell2_force: number | null;
-  cell3_force: number | null;
-  net_force: number | null;
-  pressure_pt1: number | null;
-  pressure_pt2: number | null;
-  pressure_pt3: number | null;
-  pressure_pt4: number | null;
-  pressure_pt5: number | null;
-  pressure_pt6: number | null;
-  weight_load_cell: number | null;
-  chamber_temp: number | null;
-  nozzle_temp: number | null;
-}
+import SolidUI from "./components/SolidUI"
 
 export default function Home() {
-  const [solid, setSolid] = useState(true);
   const [telemetryData, setTelemetryData] = useState<TelemetryRow[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const telemetryUpdateCounterRef = useRef<number>(0);
-
-  const switchUI = () => {
-    setSolid(!solid);
-  };
 
   // Single WebSocket connection for the entire app
   useEffect(() => {
@@ -98,12 +77,7 @@ export default function Home() {
 
   return (
     <>
-      <button onClick={switchUI}>Switch UI</button>
-      {solid ? (
-        <SolidUI telemetryData={telemetryData} connectionStatus={connectionStatus} />
-      ) : (
-        <LiquidUI telemetryData={telemetryData} connectionStatus={connectionStatus} />
-      )}
+      <SolidUI telemetryData={telemetryData} connectionStatus={connectionStatus} />
     </>
   )
 }
