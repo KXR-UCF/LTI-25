@@ -61,7 +61,6 @@ export default function SolidUI({ telemetryData, connectionStatus }: SolidUIProp
   const [peakPressure, setPeakPressure] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
-  const lastProcessedLengthRef = useRef<number>(0);
 
   // Add toggle handler for switches
   const toggleSwitch = (switchName: keyof typeof switchStates) => {
@@ -149,28 +148,22 @@ export default function SolidUI({ telemetryData, connectionStatus }: SolidUIProp
       newPressureData.push(pressurePoint);
     });
 
-    // Update complete datasets
-    setCompleteGraphData(prev => [...prev, ...newLoadCellData]);
-    setCompletePressureData(prev => [...prev, ...newPressureData]);
+    // Update complete datasets (replace with full dataset from backend)
+    setCompleteGraphData(newLoadCellData);
+    setCompletePressureData(newPressureData);
 
     // Update display datasets (last 30 points) - preserve original timestamps
-    setGraphData(prev => {
-      const combined = [...prev, ...newLoadCellData];
-      if (combined.length > 30) {
-        // Keep the last 30 points but preserve their original timestamps
-        return combined.slice(-30);
-      }
-      return combined;
-    });
+    if (newLoadCellData.length > 30) {
+      setGraphData(newLoadCellData.slice(-30));
+    } else {
+      setGraphData(newLoadCellData);
+    }
 
-    setPressureData(prev => {
-      const combined = [...prev, ...newPressureData];
-      if (combined.length > 30) {
-        // Keep the last 30 points but preserve their original timestamps
-        return combined.slice(-30);
-      }
-      return combined;
-    });
+    if (newPressureData.length > 30) {
+      setPressureData(newPressureData.slice(-30));
+    } else {
+      setPressureData(newPressureData);
+    }
 
     // Update peak values
     const maxNetForce = Math.max(...newLoadCellData.map(d => d.total));
@@ -358,9 +351,8 @@ export default function SolidUI({ telemetryData, connectionStatus }: SolidUIProp
 
   // Process telemetry data when received from parent
   useEffect(() => {
-    if (telemetryData.length > 0 && telemetryData.length !== lastProcessedLengthRef.current) {
+    if (telemetryData.length > 0) {
       processTelemetryData(telemetryData);
-      lastProcessedLengthRef.current = telemetryData.length;
     }
   }, [telemetryData]);
 
