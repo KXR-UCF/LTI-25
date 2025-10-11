@@ -9,28 +9,15 @@ import {
     ResponsiveContainer,
 } from "recharts";
 
-import { type DataPoint } from "../interfaces"
+import { type LoadCellData, type PressureData } from "../interfaces"
 
-interface LoadCellGraphProps { 
-    graphData: DataPoint[]; 
-    completeGraphData: DataPoint[]; 
-    exportCompleteChart: (data: any[], filename: string, isLoadCell: boolean) => Promise<void>; 
+interface GraphProps { 
+    data: LoadCellData | PressureData; 
 }
 
-function LoadCellGraph({
-    graphData, 
-    completeGraphData, 
-    exportCompleteChart
-}: LoadCellGraphProps) {
-    const exportLoadCellChart = () => {
-        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-        exportCompleteChart(
-            completeGraphData,
-            `load-cell-complete-session-${timestamp}`,
-            true
-        );
-    };
-
+function Graph({
+    data
+}: GraphProps) {
     return (
         <div className="bg-gradient-to-b from-gray-900/50 to-gray-900/30 rounded-lg border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)] backdrop-blur-sm flex flex-col">
             <div className="p-4 flex-none">
@@ -40,8 +27,6 @@ function LoadCellGraph({
                     </h2>
                     <div className="flex gap-2">
                         <button
-                            onClick={exportLoadCellChart}
-                            disabled={completeGraphData.length === 0}
                             className="px-3 py-1 text-xs bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/50 rounded text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             title="Download Complete Load Cell Session as PNG"
                         >
@@ -55,7 +40,7 @@ function LoadCellGraph({
                     id="load-cell-chart"
                     className="relative h-full bg-gradient-to-b from-gray-900/50 to-gray-900/30 rounded-lg border border-white/10"
                 >
-                    {graphData.length === 0 ? (
+                    {data ? (
                         <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm flex flex-col items-center justify-center">
                             <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
                                 <svg
@@ -82,7 +67,7 @@ function LoadCellGraph({
                     ) : (
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart
-                                data={graphData}
+                                data={data.data}
                                 margin={{
                                     top: 10,
                                     right: 30,
@@ -362,4 +347,4 @@ function LoadCellGraph({
     );
 }
 
-export default LoadCellGraph
+export default Graph

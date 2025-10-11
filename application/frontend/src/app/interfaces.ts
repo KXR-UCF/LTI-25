@@ -6,9 +6,20 @@ export interface DataPoint {
     total: number;
 }
 
+export interface LoadCellData {
+    data: DataPoint[];
+    peakNet: number;
+}
+
 export interface PressureDataPoint {
     timestamp: number;
     pressure: number;
+    total: number;
+}
+
+export interface PressureData {
+    data: PressureDataPoint[];
+    peakNet: number;
 }
 
 export interface TelemetryRow {
@@ -23,6 +34,7 @@ export interface TelemetryRow {
     pressure_pt4: number | null;
     pressure_pt5: number | null;
     pressure_pt6: number | null;
+    net_pressure: number | null;
     weight_load_cell: number | null;
     chamber_temp: number | null;
     nozzle_temp: number | null;

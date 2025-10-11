@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 
 import { type TelemetryRow } from "./interfaces"
 
-import SolidUI from "./components/SolidUI"
+import UI from "./components/UI"
 
 export default function Home() {
   const [telemetryData, setTelemetryData] = useState<TelemetryRow[]>([]);
@@ -77,7 +77,7 @@ export default function Home() {
 
   return (
     <>
-      <SolidUI telemetryData={telemetryData} connectionStatus={connectionStatus} />
+      <UI telemetryData={telemetryData} connectionStatus={connectionStatus} />
     </>
   )
 }
