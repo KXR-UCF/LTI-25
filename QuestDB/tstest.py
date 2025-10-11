@@ -2,15 +2,9 @@ from questdb.ingress import Sender
 import time
 from datetime import datetime
 
-from dotenv import load_dotenv
-import os
-load_dotenv()
+port = "http::addr=127.0.0.1:9000"
 
-port = os.getenv('PORT')
-username = os.getenv('USERNAME')
-password = os.getenv('PASSWORD')
-
-conf = f'{port};username={username};password={password};'
+conf = f'{port};username=admin;password=quest;'
 
 def query(sender, c1, c2, c3, p1, p2, p3, p4, p5, p6, weight, chamber, nozzle):
     total = c1 + c2 + c3
@@ -18,19 +12,19 @@ def query(sender, c1, c2, c3, p1, p2, p3, p4, p5, p6, weight, chamber, nozzle):
             'telemetry_data',
             columns = 
             {
-                'cell1_force': c1,
-                'cell2_force': c2,
-                'cell3_force': c3,
-                'avg_force': total,
-                'pressure_pt1': p1,
-                'pressure_pt2': p2,
-                'pressure_pt3': p3,
-                'pressure_p4': p4,
-                'pressure_pt5': p5,
-                'pressure_pt6': p6,
-                'weight_load_cell': weight,
-                'chamber_temp': chamber,
-                'nozzle_temp': nozzle
+                'cell1_force': float(c1),
+                'cell2_force': float(c2),
+                'cell3_force': float(c3),
+                'avg_force': float(total),
+                'pressure_pt1': float(p1),
+                'pressure_pt2': float(p2),
+                'pressure_pt3': float(p3),
+                'pressure_p4': float(p4),
+                'pressure_pt5': float(p5),
+                'pressure_pt6': float(p6),
+                'weight_load_cell': float(weight),
+                'chamber_temp': float(chamber),
+                'nozzle_temp': float(nozzle)
             },
             at = datetime.now()
         )
@@ -50,21 +44,21 @@ p5 = 5
 p6 = 5
 weight = 1
 chamber = 1
-nozzle = 2
+nozzle = 1
 
 with Sender.from_conf(conf) as sender:
     while True:
         query(sender, c1, c2, c3, p1, p2, p3, p4, p5, p6, weight, chamber, nozzle)
 
-        c1 += 1
-        c2 += 2
-        c3 += 3
-        p1 += 1
-        p2 += 2
-        p3 += 3
-        p4 += 4
-        p5 += 5
-        p6 += 5
-        weight += 1
-        chamber += 1
-        nozzle += 2
+        c1 += 100
+        c2 += 200
+        c3 += 300
+        p1 += 100
+        p2 += 200
+        p3 += 300
+        p4 += 400
+        p5 += 500
+        p6 += 500
+        weight += 100
+        chamber += 100
+        nozzle += 200
