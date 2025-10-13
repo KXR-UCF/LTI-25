@@ -22,7 +22,7 @@ try:
         response_ack = False
         while not response_ack:
             # if no response within a second, retry send message
-            if time.time() - send_time >= 1:
+            if time.time() - send_time >= 0.2:
                 s.send(msg)
                 send_time = time.time()
                 attempts += 1

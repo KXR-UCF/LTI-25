@@ -116,29 +116,38 @@ try:
 
             # update sate file
             switch = None
-            switch_state = None
+            switch_open = None
             if msg[0].isdigit():
-                switch = msg[0]
-                if msg[2:] == "Open":
-                    switch_state = True
-                elif msg[2:] == "Close":
-                    switch_state = False
+                switch_info = msg.split(' ')
+                
+                if not switch_info[0].isnumeric():
+                    raise ValueError(f"Switch id <{switch_info[0]}> not numeric")
+
+                switch = f"switch_{switch_info[0]}"
+                if switch_info[1] == "Open" or switch_info[1] == "Close":
+                    switch_state = switch_info[1] == "Open"
                 else:
-                    print(f"Not open or closed: msg:<{msg}>")
+                    raise ValueError(f"{switch} not open or closed")
 
             elif msg == "ENABLE FIRE" or msg == "DISABLE FIRE":
                 switch = "enable_fire"
                 switch_state = (msg == "ENABLE FIRE")
 
             elif msg == "FIRE":
-                switch = msg.lower()
+                switch = "fire"
                 switch_state = True
 
-            switch_states[switch] = switch_state
+            else:
+                raise ValueError(f"Unexpected Command")
+
+            switch_states[str(switch)] = switch_state
 
 
             with open(SWITCH_STATE_FILENAME, 'w') as f:
                 json.dump(switch_states ,f, indent=4, sort_keys=True)
+
+        except ValueError as e:
+            print(f"{e} \n\n CMD: <{msg}>")
 
         except Exception as e:
             print(e)
