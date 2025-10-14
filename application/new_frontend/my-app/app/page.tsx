@@ -59,7 +59,23 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-100 to-gray-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 text-gray-900 dark:text-white p-4">
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-2 bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 shadow-sm">
+          <div className={`w-2 h-2 rounded-full ${
+            connectionStatus === 'connected' ? 'bg-green-500 animate-pulse' :
+            connectionStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' :
+            'bg-red-500'
+          }`}></div>
+          <span className="text-xs font-medium text-gray-700 dark:text-white/80">
+            {connectionStatus === 'connected' ? 'Connected' :
+             connectionStatus === 'connecting' ? 'Connecting...' :
+             'Disconnected'}
+          </span>
+          <div className="h-3 w-px bg-gray-300 dark:bg-gray-700"></div>
+          <span className="text-xs text-gray-500 dark:text-white/50">
+            {telemetryData.length} pts
+          </span>
+        </div>
         <ThemeToggle />
       </div>
       <Tabs defaultValue="solid" className="w-full">

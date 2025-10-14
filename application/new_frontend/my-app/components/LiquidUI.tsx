@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import UPlotChart from "@/components/UPlotChart";
 import uPlot from 'uplot';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTheme } from 'next-themes';
 
 interface TelemetryRow {
@@ -32,6 +32,26 @@ interface LiquidUIProps {
 export default function LiquidUI({ telemetryData, connectionStatus }: LiquidUIProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+
+  // System control states
+  const [switchStates, setSwitchStates] = useState({
+    switch1: false,
+    switch2: false,
+    switch3: false,
+    switch4: false,
+    switch5: false,
+    switch6: false,
+    launchKey: false,
+    abort: false
+  });
+
+  // Toggle handler for switches
+  const toggleSwitch = (switchName: keyof typeof switchStates) => {
+    setSwitchStates(prev => ({
+      ...prev,
+      [switchName]: !prev[switchName]
+    }));
+  };
 
   // Convert telemetry data to uPlot format for load cells
   const loadCellData = useMemo((): uPlot.AlignedData => {
@@ -81,10 +101,41 @@ export default function LiquidUI({ telemetryData, connectionStatus }: LiquidUIPr
     return [timestamps, chamber, nozzle];
   }, [telemetryData]);
 
+  // Calculate latest data and peak values
+  const latestData = useMemo(() => {
+    if (telemetryData.length === 0) {
+      return {
+        cell1: 0, cell2: 0, cell3: 0, total: 0, peakNetForce: 0,
+        weight: 0, pressure: 0, pt2: 0, pt3: 0, pt4: 0, pt5: 0, pt6: 0,
+        chamber: 0, nozzle: 0
+      };
+    }
+
+    const latest = telemetryData[telemetryData.length - 1];
+    const peakNetForce = Math.max(...telemetryData.map(d => d.net_force || 0));
+
+    return {
+      cell1: latest.cell1_force || 0,
+      cell2: latest.cell2_force || 0,
+      cell3: latest.cell3_force || 0,
+      total: latest.net_force || 0,
+      peakNetForce,
+      weight: latest.weight_load_cell || 0,
+      pressure: latest.pressure_pt1 || 0,
+      pt2: latest.pressure_pt2 || 0,
+      pt3: latest.pressure_pt3 || 0,
+      pt4: latest.pressure_pt4 || 0,
+      pt5: latest.pressure_pt5 || 0,
+      pt6: latest.pressure_pt6 || 0,
+      chamber: latest.chamber_temp || 0,
+      nozzle: latest.nozzle_temp || 0
+    };
+  }, [telemetryData]);
+
   // Load cell chart options
   const loadCellOptions = useMemo((): uPlot.Options => ({
-    width: 800,
-    height: 400,
+    width: 1200,
+    height: 500,
     class: 'load-cell-chart',
     scales: {
       x: {
@@ -106,6 +157,7 @@ export default function LiquidUI({ telemetryData, connectionStatus }: LiquidUIPr
         stroke: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.6)',
         grid: { stroke: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.1)', width: 1 },
         values: (u, vals) => vals.map(v => v + ' LBS'),
+        labelGap: 10,
       },
     ],
     series: [
@@ -138,8 +190,8 @@ export default function LiquidUI({ telemetryData, connectionStatus }: LiquidUIPr
 
   // Thermal chart options
   const thermalOptions = useMemo((): uPlot.Options => ({
-    width: 800,
-    height: 400,
+    width: 1200,
+    height: 500,
     class: 'thermal-chart',
     scales: {
       x: {
@@ -161,6 +213,7 @@ export default function LiquidUI({ telemetryData, connectionStatus }: LiquidUIPr
         stroke: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.6)',
         grid: { stroke: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.1)', width: 1 },
         values: (u, vals) => vals.map(v => v + '°C'),
+        labelGap: 10,
       },
     ],
     series: [
@@ -199,7 +252,7 @@ export default function LiquidUI({ telemetryData, connectionStatus }: LiquidUIPr
               DOWNLOAD
             </Button>
           </CardHeader>
-          <CardContent className="h-[calc(100%-5rem)]">
+          <CardContent className="h-[550px]">
             {telemetryData.length === 0 ? (
               <div className="w-full h-full flex flex-col items-center justify-center">
                 <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-3">
@@ -230,7 +283,7 @@ export default function LiquidUI({ telemetryData, connectionStatus }: LiquidUIPr
               DOWNLOAD
             </Button>
           </CardHeader>
-          <CardContent className="h-[calc(100%-5rem)]">
+          <CardContent className="h-[550px]">
             {telemetryData.length === 0 ? (
               <div className="w-full h-full flex flex-col items-center justify-center">
                 <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-3">
@@ -251,24 +304,165 @@ export default function LiquidUI({ telemetryData, connectionStatus }: LiquidUIPr
       {/* Right Column - Measurements and controls */}
       <div className="flex flex-col gap-4">
         <Card className="bg-white dark:bg-gray-900/50 border-gray-200 dark:border-white/10 shadow-lg flex-1">
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="text-lg font-bold tracking-wider">
               MEASUREMENTS
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-gray-500 dark:text-white/60">Coming next...</p>
+          <CardContent className="space-y-4 h-full flex flex-col">
+            {/* Load Cells & Net Force */}
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-gray-500 dark:text-white/50 mb-2 uppercase tracking-wider">Force Sensors</p>
+              <div className="grid grid-cols-3 gap-3 h-[calc(100%-1.75rem)]">
+                {['total', 'peakNetForce', 'weight'].map((sensor) => (
+                  <div key={sensor} className="bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-white/10 p-3 flex flex-col justify-center items-center space-y-2">
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-semibold text-gray-900 dark:text-white tracking-wide leading-tight">
+                        {sensor === 'total' ? 'NET' :
+                         sensor === 'peakNetForce' ? 'PEAK' :
+                         'WEIGHT'}
+                      </p>
+                      <div className={`w-2 h-2 rounded-full ${
+                        latestData[sensor as keyof typeof latestData] > 0 ? 'bg-green-500' : 'bg-red-500'
+                      }`}></div>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-base font-bold text-gray-900 dark:text-white">
+                        {latestData[sensor as keyof typeof latestData].toFixed(1)}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-white/70 font-medium">LBS</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Pressure Transducers */}
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-gray-500 dark:text-white/50 mb-2 uppercase tracking-wider">Pressure</p>
+              <div className="grid grid-cols-3 grid-rows-2 gap-3 h-[calc(100%-1.75rem)]">
+                {['pressure', 'pt2', 'pt3', 'pt4', 'pt5', 'pt6'].map((sensor) => (
+                  <div key={sensor} className="bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-white/10 p-3 flex flex-col justify-center items-center space-y-2">
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-semibold text-gray-900 dark:text-white tracking-wide leading-tight">
+                        {sensor === 'pressure' ? 'PT1' :
+                         sensor === 'pt2' ? 'PT2' :
+                         sensor === 'pt3' ? 'PT3' :
+                         sensor === 'pt4' ? 'PT4' :
+                         sensor === 'pt5' ? 'PT5' :
+                         'PT6'}
+                      </p>
+                      <div className={`w-2 h-2 rounded-full ${
+                        latestData[sensor as keyof typeof latestData] > 0 ? 'bg-green-500' : 'bg-red-500'
+                      }`}></div>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-base font-bold text-gray-900 dark:text-white">
+                        {latestData[sensor as keyof typeof latestData].toFixed(1)}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-white/70 font-medium">PSI</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Temperature */}
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-gray-500 dark:text-white/50 mb-2 uppercase tracking-wider">Temperature</p>
+              <div className="grid grid-cols-2 gap-3 h-[calc(100%-1.75rem)]">
+                {['chamber', 'nozzle'].map((sensor) => (
+                  <div key={sensor} className="bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-white/10 p-3 flex flex-col justify-center items-center space-y-2">
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-semibold text-gray-900 dark:text-white tracking-wide leading-tight">
+                        {sensor === 'chamber' ? 'CHAMBER' : 'NOZZLE'}
+                      </p>
+                      <div className={`w-2 h-2 rounded-full ${
+                        latestData[sensor as keyof typeof latestData] > 0 ? 'bg-green-500' : 'bg-red-500'
+                      }`}></div>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-base font-bold text-gray-900 dark:text-white">
+                        {latestData[sensor as keyof typeof latestData].toFixed(1)}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-white/70 font-medium">°C</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white dark:bg-gray-900/50 border-gray-200 dark:border-white/10 shadow-lg flex-1">
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="text-lg font-bold tracking-wider">
               SYSTEM CONTROLS
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-gray-500 dark:text-white/60">Coming next...</p>
+          <CardContent className="h-full flex flex-col gap-3">
+            <div className="grid grid-cols-2 gap-3 grid-rows-3 flex-1">
+              {[
+                { key: 'switch1', label: 'NOX FILL' },
+                { key: 'switch2', label: 'NOX VENT' },
+                { key: 'switch3', label: 'NOX RELIEF' },
+                { key: 'switch4', label: 'N2 FILL' },
+                { key: 'switch5', label: 'N2 VENT' },
+                { key: 'switch6', label: 'CONTINUITY' },
+              ].map(({ key, label }) => (
+                <div
+                  key={key}
+                  onClick={() => toggleSwitch(key as keyof typeof switchStates)}
+                  className={`flex flex-col p-3 rounded-lg border transition-all duration-300 cursor-pointer justify-center items-center space-y-2 ${
+                    switchStates[key as keyof typeof switchStates]
+                      ? 'bg-green-100 dark:bg-green-900/30 border-green-500/50'
+                      : 'bg-red-100 dark:bg-red-900/30 border-red-500/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">{label}</p>
+                    <div className={`w-2.5 h-2.5 rounded-full ${
+                      switchStates[key as keyof typeof switchStates] ? 'bg-green-500' : 'bg-red-500'
+                    }`}></div>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
+                    {switchStates[key as keyof typeof switchStates] ? 'ACTIVE' : 'INACTIVE'}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div
+                onClick={() => toggleSwitch('launchKey')}
+                className={`flex flex-col p-3 rounded-lg border transition-all duration-300 cursor-pointer justify-center items-center space-y-2 ${
+                  switchStates.launchKey
+                    ? 'bg-green-100 dark:bg-green-900/30 border-green-500/50'
+                    : 'bg-red-100 dark:bg-red-900/30 border-red-500/50'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-semibold text-gray-900 dark:text-white">LAUNCH KEY</p>
+                  <div className={`w-2.5 h-2.5 rounded-full ${
+                    switchStates.launchKey ? 'bg-green-500' : 'bg-red-500'
+                  }`}></div>
+                </div>
+                <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
+                  {switchStates.launchKey ? 'ACTIVE' : 'INACTIVE'}
+                </p>
+              </div>
+              <div
+                onClick={() => toggleSwitch('abort')}
+                className="flex flex-col p-3 rounded-lg border transition-all duration-300 cursor-pointer bg-red-100 dark:bg-red-900/30 border-red-500/50 justify-center items-center space-y-2"
+              >
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-semibold text-gray-900 dark:text-white">ABORT</p>
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                </div>
+                <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
+                  {switchStates.abort ? 'ENGAGED' : 'STANDBY'}
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
