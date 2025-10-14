@@ -18,6 +18,14 @@ export default function UPlotChart({ data, options, onCreate, onDelete }: UPlotC
   useEffect(() => {
     if (!chartRef.current) return;
 
+    // Destroy existing instance if it exists
+    if (plotInstance.current) {
+      if (onDelete) {
+        onDelete(plotInstance.current);
+      }
+      plotInstance.current.destroy();
+    }
+
     // Create new chart instance
     plotInstance.current = new uPlot(options, data, chartRef.current);
 
@@ -34,7 +42,7 @@ export default function UPlotChart({ data, options, onCreate, onDelete }: UPlotC
         plotInstance.current = null;
       }
     };
-  }, []); // Only create once on mount
+  }, [options]); // Recreate when options change (including theme)
 
   useEffect(() => {
     // Update data when it changes
