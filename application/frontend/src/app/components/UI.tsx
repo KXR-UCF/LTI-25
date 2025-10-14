@@ -3,12 +3,14 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 
 import { 
-    type TelemetryRow, 
-    type LoadCellData,
+    type TelemetryRow,
     type DataPoint,
-    type PressureData,
+    type LoadCellData,
+    createEmptyLoadCellInterface,
     type PressureDataPoint, 
-    type LatestData
+    type PressureData,
+    createEmptyPressureInterface,
+    type LatestData,
 } from "../interfaces"
 
 import TelemetryReadings from "./TelemetryReadings";
@@ -25,14 +27,8 @@ function UI({
     telemetryData,
     connectionStatus,
 }: SolidUIProps) {
-    const [loadCellData, setLoadCellData] = useState<LoadCellData>({
-        data: [],
-        peakNet: Number.MIN_SAFE_INTEGER
-    });
-    const [pressureData, setPressureData] = useState<PressureData>({
-        data: [],
-        peakNet: Number.MIN_SAFE_INTEGER
-    });
+    const [loadCellData, setLoadCellData] = useState<LoadCellData>(createEmptyLoadCellInterface());
+    const [pressureData, setPressureData] = useState<PressureData>(createEmptyPressureInterface());
 
     const [startTime, setStartTime] = useState<number | null>(null);
     const startTimeRef = useRef<number | null>(null);
@@ -97,7 +93,6 @@ function UI({
             const pressurePoint: PressureDataPoint = {
                 timestamp: runtimeSeconds,
                 pressure: row.pressure_pt1 || 0,
-                total: row.net_pressure || 0,
             };
 
             newLoadCellData.push(loadCellPoint);
@@ -106,11 +101,11 @@ function UI({
 
         // Update complete datasets
         setLoadCellData((prev) => {
-            let next: LoadCellData
+            let next: LoadCellData = createEmptyLoadCellInterface()
             
             next.data = [...prev.data, ...newLoadCellData]
 
-            const maxNetForce = Math.max(...newLoadCellData.map((d) => d.total));
+            const maxNetForce = Math.max(...newLoadCellData.map((d) => d.total)); // Will be sum for liquid
             if (maxNetForce > prev.peakNet) {
                 next.peakNet = maxNetForce;
             } else {
@@ -121,11 +116,11 @@ function UI({
         });
 
         setPressureData((prev) => {
-            let next: PressureData
+            let next: PressureData = createEmptyPressureInterface()
             
             next.data = [...prev.data, ...newPressureData]
 
-            const maxNetForce = Math.max(...newPressureData.map((d) => d.total));
+            const maxNetForce = Math.max(...newPressureData.map((d) => d.pressure));
             if (maxNetForce > prev.peakNet) {
                 next.peakNet = maxNetForce;
             } else {

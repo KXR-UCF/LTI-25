@@ -11,15 +11,34 @@ export interface LoadCellData {
     peakNet: number;
 }
 
+export const createEmptyLoadCellInterface = () => {
+    const result: LoadCellData = {
+        data: [],
+        peakNet: Number.MIN_SAFE_INTEGER
+    }
+
+    return result
+}
+
 export interface PressureDataPoint {
     timestamp: number;
     pressure: number;
-    total: number;
 }
+
+// Second interface for liquid
 
 export interface PressureData {
     data: PressureDataPoint[];
     peakNet: number;
+}
+
+export const createEmptyPressureInterface = () => {
+    const result: PressureData = {
+        data: [],
+        peakNet: Number.MIN_SAFE_INTEGER
+    }
+
+    return result
 }
 
 export interface TelemetryRow {
