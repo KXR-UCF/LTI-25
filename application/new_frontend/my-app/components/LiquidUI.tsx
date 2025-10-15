@@ -33,6 +33,9 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime }:
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
+  // Peak value tracking
+  const [peakNetForce, setPeakNetForce] = useState(0);
+
   // System control states
   const [switchStates, setSwitchStates] = useState({
     switch1: false,
@@ -97,7 +100,7 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime }:
     return [timestamps, chamber, nozzle];
   }, [telemetryData, startTime]);
 
-  // Calculate latest data and peak values
+  // Calculate latest data and update peaks incrementally
   const latestData = useMemo(() => {
     if (telemetryData.length === 0) {
       return {
@@ -108,13 +111,18 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime }:
     }
 
     const latest = telemetryData[telemetryData.length - 1];
-    const peakNetForce = Math.max(...telemetryData.map(d => d.net_force || 0));
+    const currentNetForce = latest.net_force || 0;
+
+    // Update peak if we found a new maximum
+    if (currentNetForce > peakNetForce) {
+      setPeakNetForce(currentNetForce);
+    }
 
     return {
       cell1: latest.cell1_force || 0,
       cell2: latest.cell2_force || 0,
       cell3: latest.cell3_force || 0,
-      total: latest.net_force || 0,
+      total: currentNetForce,
       peakNetForce,
       weight: latest.weight_load_cell || 0,
       pressure: latest.pressure_pt1 || 0,
@@ -126,7 +134,7 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime }:
       chamber: latest.chamber_temp || 0,
       nozzle: latest.nozzle_temp || 0
     };
-  }, [telemetryData]);
+  }, [telemetryData, peakNetForce]);
 
   // Load cell chart options
   const loadCellOptions = useMemo((): uPlot.Options => {

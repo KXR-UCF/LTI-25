@@ -33,6 +33,10 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime }: 
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
+  // Peak value tracking
+  const [peakNetForce, setPeakNetForce] = useState(0);
+  const [peakPressure, setPeakPressure] = useState(0);
+
   // System control states
   const [switchStates, setSwitchStates] = useState({
     continuity: false,
@@ -90,7 +94,7 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime }: 
     return [timestamps, pressure];
   }, [telemetryData, startTime]);
 
-  // Calculate latest data and peak values
+  // Calculate latest data and update peaks incrementally
   const latestData = useMemo(() => {
     if (telemetryData.length === 0) {
       return {
@@ -100,19 +104,27 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime }: 
     }
 
     const latest = telemetryData[telemetryData.length - 1];
-    const peakNetForce = Math.max(...telemetryData.map(d => d.net_force || 0));
-    const peakPressure = Math.max(...telemetryData.map(d => d.pressure_pt1 || 0));
+    const currentNetForce = latest.net_force || 0;
+    const currentPressure = latest.pressure_pt1 || 0;
+
+    // Update peaks if we found a new maximum
+    if (currentNetForce > peakNetForce) {
+      setPeakNetForce(currentNetForce);
+    }
+    if (currentPressure > peakPressure) {
+      setPeakPressure(currentPressure);
+    }
 
     return {
       cell1: latest.cell1_force || 0,
       cell2: latest.cell2_force || 0,
       cell3: latest.cell3_force || 0,
-      total: latest.net_force || 0,
+      total: currentNetForce,
       peakNetForce,
-      pressure: latest.pressure_pt1 || 0,
+      pressure: currentPressure,
       peakPressure
     };
-  }, [telemetryData]);
+  }, [telemetryData, peakNetForce, peakPressure]);
 
   // Load cell chart options
   const loadCellOptions = useMemo((): uPlot.Options => {
