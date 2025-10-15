@@ -33,10 +33,6 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime }:
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  // Chart interaction states
-  const [isLoadCellPaused, setIsLoadCellPaused] = useState(false);
-  const [isThermalPaused, setIsThermalPaused] = useState(false);
-
   // System control states
   const [switchStates, setSwitchStates] = useState({
     switch1: false,
@@ -148,13 +144,6 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime }:
           key: 'telemetry',
         },
       },
-      hooks: {
-        setScale: [
-          (u) => {
-            setIsLoadCellPaused(true);
-          },
-        ],
-      },
       scales: {
         x: {
           time: false,
@@ -204,7 +193,7 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime }:
         show: true,
       },
     };
-  }, [isDark, loadCellData, isLoadCellPaused]);
+  }, [isDark]);
 
   // Thermal chart options
   const thermalOptions = useMemo((): uPlot.Options => {
@@ -221,13 +210,6 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime }:
         sync: {
           key: 'telemetry',
         },
-      },
-      hooks: {
-        setScale: [
-          (u) => {
-            setIsThermalPaused(true);
-          },
-        ],
       },
       scales: {
         x: {
@@ -268,7 +250,7 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime }:
         show: true,
       },
     };
-  }, [isDark, thermalData, isThermalPaused]);
+  }, [isDark]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -276,18 +258,10 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime }:
       <div className="lg:col-span-3 grid grid-rows-2 gap-4">
         {/* Load Cell Chart */}
         <Card className="bg-white dark:bg-gray-900/50 border-gray-200 dark:border-white/10 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader>
             <CardTitle className="text-lg font-bold tracking-wider">
               LOAD CELL TELEMETRY
             </CardTitle>
-            {isLoadCellPaused && (
-              <button
-                onClick={() => setIsLoadCellPaused(false)}
-                className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded transition-colors"
-              >
-                Reset to Live
-              </button>
-            )}
           </CardHeader>
           <CardContent className="h-[550px]">
             {telemetryData.length === 0 ? (
@@ -311,18 +285,10 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime }:
 
         {/* Thermal Chart */}
         <Card className="bg-white dark:bg-gray-900/50 border-gray-200 dark:border-white/10 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader>
             <CardTitle className="text-lg font-bold tracking-wider">
               THERMAL COUPLE TELEMETRY
             </CardTitle>
-            {isThermalPaused && (
-              <button
-                onClick={() => setIsThermalPaused(false)}
-                className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded transition-colors"
-              >
-                Reset to Live
-              </button>
-            )}
           </CardHeader>
           <CardContent className="h-[550px]">
             {telemetryData.length === 0 ? (

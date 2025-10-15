@@ -33,10 +33,6 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime }: 
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  // Chart interaction states
-  const [isLoadCellPaused, setIsLoadCellPaused] = useState(false);
-  const [isPressurePaused, setIsPressurePaused] = useState(false);
-
   // System control states
   const [switchStates, setSwitchStates] = useState({
     continuity: false,
@@ -134,13 +130,6 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime }: 
           key: 'telemetry',
         },
       },
-      hooks: {
-        setScale: [
-          (u) => {
-            setIsLoadCellPaused(true);
-          },
-        ],
-      },
       scales: {
         x: {
           time: false,
@@ -190,7 +179,7 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime }: 
         show: true,
       },
     };
-  }, [isDark, loadCellData, isLoadCellPaused]);
+  }, [isDark]);
 
   // Pressure chart options
   const pressureOptions = useMemo((): uPlot.Options => {
@@ -207,13 +196,6 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime }: 
         sync: {
           key: 'telemetry',
         },
-      },
-      hooks: {
-        setScale: [
-          (u) => {
-            setIsPressurePaused(true);
-          },
-        ],
       },
       scales: {
         x: {
@@ -249,7 +231,7 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime }: 
         show: true,
       },
     };
-  }, [isDark, pressureData, isPressurePaused]);
+  }, [isDark]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -257,18 +239,10 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime }: 
         <div className="lg:col-span-3 grid grid-rows-2 gap-4">
         {/* Load Cell Chart */}
         <Card className="bg-white dark:bg-gray-900/50 border-gray-200 dark:border-white/10 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader>
             <CardTitle className="text-lg font-bold tracking-wider">
               LOAD CELL TELEMETRY
             </CardTitle>
-            {isLoadCellPaused && (
-              <button
-                onClick={() => setIsLoadCellPaused(false)}
-                className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded transition-colors"
-              >
-                Reset to Live
-              </button>
-            )}
           </CardHeader>
           <CardContent className="h-[550px]">
             {telemetryData.length === 0 ? (
@@ -292,18 +266,10 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime }: 
 
         {/* Pressure Chart */}
         <Card className="bg-white dark:bg-gray-900/50 border-gray-200 dark:border-white/10 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader>
             <CardTitle className="text-lg font-bold tracking-wider">
               PRESSURE TRANSDUCER TELEMETRY
             </CardTitle>
-            {isPressurePaused && (
-              <button
-                onClick={() => setIsPressurePaused(false)}
-                className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded transition-colors"
-              >
-                Reset to Live
-              </button>
-            )}
           </CardHeader>
           <CardContent className="h-[550px]">
             {telemetryData.length === 0 ? (
