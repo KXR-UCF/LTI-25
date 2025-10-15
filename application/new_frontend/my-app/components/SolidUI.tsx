@@ -1,7 +1,6 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import UPlotChart from "@/components/UPlotChart";
 import uPlot from 'uplot';
 import { useMemo, useState } from 'react';
@@ -27,9 +26,10 @@ interface TelemetryRow {
 interface SolidUIProps {
   telemetryData: TelemetryRow[];
   connectionStatus: 'disconnected' | 'connecting' | 'connected';
+  startTime: number | null;
 }
 
-export default function SolidUI({ telemetryData, connectionStatus }: SolidUIProps) {
+export default function SolidUI({ telemetryData, connectionStatus, startTime }: SolidUIProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -50,7 +50,7 @@ export default function SolidUI({ telemetryData, connectionStatus }: SolidUIProp
 
   // Convert telemetry data to uPlot format for load cells
   const loadCellData = useMemo((): uPlot.AlignedData => {
-    if (telemetryData.length === 0) {
+    if (telemetryData.length === 0 || startTime === null) {
       return [[], [], [], [], []];
     }
 
@@ -59,8 +59,6 @@ export default function SolidUI({ telemetryData, connectionStatus }: SolidUIProp
     const cell2: (number | null)[] = [];
     const cell3: (number | null)[] = [];
     const netForce: (number | null)[] = [];
-
-    const startTime = new Date(telemetryData[0].timestamp).getTime() / 1000;
 
     telemetryData.forEach(row => {
       const time = new Date(row.timestamp).getTime() / 1000;
@@ -72,18 +70,16 @@ export default function SolidUI({ telemetryData, connectionStatus }: SolidUIProp
     });
 
     return [timestamps, cell1, cell2, cell3, netForce];
-  }, [telemetryData]);
+  }, [telemetryData, startTime]);
 
   // Convert telemetry data to uPlot format for pressure
   const pressureData = useMemo((): uPlot.AlignedData => {
-    if (telemetryData.length === 0) {
+    if (telemetryData.length === 0 || startTime === null) {
       return [[], []];
     }
 
     const timestamps: number[] = [];
     const pressure: (number | null)[] = [];
-
-    const startTime = new Date(telemetryData[0].timestamp).getTime() / 1000;
 
     telemetryData.forEach(row => {
       const time = new Date(row.timestamp).getTime() / 1000;
@@ -92,7 +88,7 @@ export default function SolidUI({ telemetryData, connectionStatus }: SolidUIProp
     });
 
     return [timestamps, pressure];
-  }, [telemetryData]);
+  }, [telemetryData, startTime]);
 
   // Calculate latest data and peak values
   const latestData = useMemo(() => {
@@ -119,19 +115,27 @@ export default function SolidUI({ telemetryData, connectionStatus }: SolidUIProp
   }, [telemetryData]);
 
   // Load cell chart options
-  const loadCellOptions = useMemo((): uPlot.Options => ({
-    width: 1200,
-    height: 500,
-    class: 'load-cell-chart',
-    scales: {
-      x: {
-        time: false,
+  const loadCellOptions = useMemo((): uPlot.Options => {
+    // Calculate dynamic X-axis range with 10-second sliding window
+    const maxTime = loadCellData[0]?.length > 0 ? Math.max(...(loadCellData[0] as number[])) : 0;
+    const WINDOW_SIZE = 10;
+    const xMin = maxTime > WINDOW_SIZE ? maxTime - WINDOW_SIZE : 0;
+    const xMax = Math.max(maxTime, WINDOW_SIZE);
+
+    return {
+      width: 1200,
+      height: 500,
+      class: 'load-cell-chart',
+      scales: {
+        x: {
+          time: false,
+          range: [xMin, xMax],
+        },
+        y: {
+          auto: false,
+          range: [0, 1000],
+        },
       },
-      y: {
-        auto: false,
-        range: [0, 1000],
-      },
-    },
     axes: [
       {
         label: 'Runtime (s)',
@@ -169,25 +173,34 @@ export default function SolidUI({ telemetryData, connectionStatus }: SolidUIProp
         width: 2,
       },
     ],
-    legend: {
-      show: true,
-    },
-  }), [isDark]);
+      legend: {
+        show: true,
+      },
+    };
+  }, [isDark, loadCellData]);
 
   // Pressure chart options
-  const pressureOptions = useMemo((): uPlot.Options => ({
-    width: 1200,
-    height: 500,
-    class: 'pressure-chart',
-    scales: {
-      x: {
-        time: false,
+  const pressureOptions = useMemo((): uPlot.Options => {
+    // Calculate dynamic X-axis range with 10-second sliding window
+    const maxTime = pressureData[0]?.length > 0 ? Math.max(...(pressureData[0] as number[])) : 0;
+    const WINDOW_SIZE = 10;
+    const xMin = maxTime > WINDOW_SIZE ? maxTime - WINDOW_SIZE : 0;
+    const xMax = Math.max(maxTime, WINDOW_SIZE);
+
+    return {
+      width: 1200,
+      height: 500,
+      class: 'pressure-chart',
+      scales: {
+        x: {
+          time: false,
+          range: [xMin, xMax],
+        },
+        y: {
+          auto: false,
+          range: [0, 2400],
+        },
       },
-      y: {
-        auto: false,
-        range: [0, 2400],
-      },
-    },
     axes: [
       {
         label: 'Runtime (s)',
@@ -210,10 +223,11 @@ export default function SolidUI({ telemetryData, connectionStatus }: SolidUIProp
         width: 2,
       },
     ],
-    legend: {
-      show: true,
-    },
-  }), [isDark]);
+      legend: {
+        show: true,
+      },
+    };
+  }, [isDark, pressureData]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -221,17 +235,10 @@ export default function SolidUI({ telemetryData, connectionStatus }: SolidUIProp
         <div className="lg:col-span-3 grid grid-rows-2 gap-4">
         {/* Load Cell Chart */}
         <Card className="bg-white dark:bg-gray-900/50 border-gray-200 dark:border-white/10 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader>
             <CardTitle className="text-lg font-bold tracking-wider">
               LOAD CELL TELEMETRY
             </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-blue-600/20 hover:bg-blue-600/40 border-blue-500/50"
-            >
-              DOWNLOAD
-            </Button>
           </CardHeader>
           <CardContent className="h-[550px]">
             {telemetryData.length === 0 ? (
@@ -245,24 +252,20 @@ export default function SolidUI({ telemetryData, connectionStatus }: SolidUIProp
                 <p className="text-xs text-gray-400 dark:text-white/40 mt-1">Waiting for telemetry data...</p>
               </div>
             ) : (
-              <UPlotChart data={loadCellData} options={loadCellOptions} />
+              <UPlotChart
+                data={loadCellData}
+                options={loadCellOptions}
+              />
             )}
           </CardContent>
         </Card>
 
         {/* Pressure Chart */}
         <Card className="bg-white dark:bg-gray-900/50 border-gray-200 dark:border-white/10 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader>
             <CardTitle className="text-lg font-bold tracking-wider">
               PRESSURE TRANSDUCER TELEMETRY
             </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-purple-600/20 hover:bg-purple-600/40 border-purple-500/50"
-            >
-              DOWNLOAD
-            </Button>
           </CardHeader>
           <CardContent className="h-[550px]">
             {telemetryData.length === 0 ? (
@@ -276,7 +279,10 @@ export default function SolidUI({ telemetryData, connectionStatus }: SolidUIProp
                 <p className="text-xs text-gray-400 dark:text-white/40 mt-1">Waiting for pressure data...</p>
               </div>
             ) : (
-              <UPlotChart data={pressureData} options={pressureOptions} />
+              <UPlotChart
+                data={pressureData}
+                options={pressureOptions}
+              />
             )}
           </CardContent>
         </Card>

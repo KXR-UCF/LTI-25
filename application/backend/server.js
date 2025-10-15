@@ -17,18 +17,45 @@ const wss = new WebSocket.Server({ port: 8080 });
 const clients = new Set();
 let lastTimestamp = null;
 
-wss.on('connection', (ws) => {
-  console.log('Client connected');
+wss.on('connection', async (ws) => {
+  console.log(`🔌 Client connected | Total clients: ${clients.size + 1}`);
+
   clients.add(ws);
-  lastTimestamp = null;
+
+  // Send initial data load to this specific client
+  try {
+    const query = 'SELECT * FROM telemetry_data ORDER BY timestamp ASC';
+    const result = await pool.query(query);
+
+    if (result.rows.length > 0) {
+      const initialMessage = {
+        type: 'telemetry_update',
+        data: result.rows
+      };
+
+      ws.send(JSON.stringify(initialMessage));
+      console.log(`📤 Sent initial ${result.rows.length} points to new client`);
+
+      // Update global lastTimestamp if this is newer
+      const lastRowTimestamp = result.rows[result.rows.length - 1].timestamp;
+      if (!lastTimestamp || lastRowTimestamp > lastTimestamp) {
+        lastTimestamp = lastRowTimestamp;
+        console.log(`📌 Updated global lastTimestamp: ${lastTimestamp}`);
+      }
+    } else {
+      console.log(`📭 No data in database to send to new client`);
+    }
+  } catch (error) {
+    console.error('❌ Error sending initial data:', error);
+  }
 
   ws.on('close', () => {
-    console.log('Client disconnected');
     clients.delete(ws);
+    console.log(`🔌 Client disconnected | Remaining clients: ${clients.size}`);
   });
 
   ws.on('error', (error) => {
-    console.error('WebSocket error:', error);
+    console.error('❌ WebSocket error:', error);
     clients.delete(ws);
   });
 });
@@ -58,7 +85,14 @@ const broadcast = async () => {
       });
 
       lastTimestamp = result.rows[result.rows.length - 1].timestamp;
-      console.log(`Broadcasted ${result.rows.length} data points to ${clients.size} clients`);
+      console.log(`📤 Broadcasted ${result.rows.length} points to ${clients.size} clients | Last timestamp: ${lastTimestamp}`);
+    } else {
+      // Only log every 60 iterations (once per second) to avoid spam
+      if (!broadcast.emptyCount) broadcast.emptyCount = 0;
+      broadcast.emptyCount++;
+      if (broadcast.emptyCount % 60 === 0) {
+        console.log(`⏸️  No new data (${broadcast.emptyCount} empty polls)`);
+      }
     }
   } catch (error) {
     console.error('Broadcast error:', error);

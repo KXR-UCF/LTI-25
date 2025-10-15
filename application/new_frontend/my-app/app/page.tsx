@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ThemeToggle } from "@/components/theme-toggle";
 import SolidUI from "@/components/SolidUI";
 import LiquidUI from "@/components/LiquidUI";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface TelemetryRow {
   timestamp: string;
@@ -23,38 +23,155 @@ interface TelemetryRow {
   nozzle_temp: number | null;
 }
 
+interface WebSocketMessage {
+  type: string;
+  data: TelemetryRow[];
+}
+
+const WEBSOCKET_URL = 'ws://localhost:8080';
+const RECONNECT_DELAY = 2000; // 2 seconds
+
 export default function Home() {
   const [telemetryData, setTelemetryData] = useState<TelemetryRow[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isUnmountedRef = useRef(false);
+  const isFirstMessageRef = useRef(true);
+  const startTimeRef = useRef<number | null>(null);  // Store the initial start time
 
-  // Mock data for testing (remove this when connecting to real WebSocket)
+  // WebSocket connection for live 60Hz telemetry updates
   useEffect(() => {
-    setConnectionStatus('connected');
-    const interval = setInterval(() => {
-      const now = Date.now();
-      setTelemetryData(prev => {
-        const newData = [...prev];
-        if (newData.length > 100) newData.shift();
-        newData.push({
-          timestamp: new Date(now).toISOString(),
-          cell1_force: Math.random() * 500,
-          cell2_force: Math.random() * 500,
-          cell3_force: Math.random() * 500,
-          net_force: Math.random() * 1000,
-          pressure_pt1: Math.random() * 2000,
-          pressure_pt2: Math.random() * 2000,
-          pressure_pt3: Math.random() * 2000,
-          pressure_pt4: Math.random() * 2000,
-          pressure_pt5: Math.random() * 2000,
-          pressure_pt6: Math.random() * 2000,
-          weight_load_cell: Math.random() * 300,
-          chamber_temp: Math.random() * 600,
-          nozzle_temp: Math.random() * 700,
-        });
-        return newData;
-      });
-    }, 100);
-    return () => clearInterval(interval);
+    isUnmountedRef.current = false;
+
+    const connect = () => {
+      if (isUnmountedRef.current) return;
+
+      // Clear any existing reconnect timeout
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+
+      // Close existing connection if any
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+
+      console.log(`[WebSocket] Connecting to ${WEBSOCKET_URL}...`);
+      setConnectionStatus('connecting');
+
+      try {
+        const ws = new WebSocket(WEBSOCKET_URL);
+
+        ws.onopen = () => {
+          if (isUnmountedRef.current) {
+            ws.close();
+            return;
+          }
+          console.log('[WebSocket] Connected successfully - receiving 60Hz updates');
+          setConnectionStatus('connected');
+          isFirstMessageRef.current = true; // Reset on new connection
+          startTimeRef.current = null; // Reset start time on new connection
+        };
+
+        ws.onmessage = (event) => {
+          if (isUnmountedRef.current) return;
+
+          try {
+            const message: WebSocketMessage = JSON.parse(event.data);
+
+            if (message.type === 'telemetry_update' && Array.isArray(message.data)) {
+              console.log(`[WebSocket] 📥 Received ${message.data.length} points`);
+
+              setTelemetryData(prev => {
+                // First message after connection: Replace with initial data from backend
+                if (isFirstMessageRef.current) {
+                  isFirstMessageRef.current = false;
+                  // Store the start time from the first data point
+                  if (message.data.length > 0) {
+                    startTimeRef.current = new Date(message.data[0].timestamp).getTime() / 1000;
+                  }
+                  console.log(`[WebSocket] 🔄 INITIAL LOAD: ${message.data.length} points | Total: ${message.data.length}`);
+                  return message.data;
+                }
+
+                // Subsequent messages: Append incremental updates with deduplication
+                // Get the last timestamp from existing data
+                const lastExistingTimestamp = prev.length > 0 ? prev[prev.length - 1].timestamp : null;
+
+                // Filter out any data that we already have (deduplication)
+                const newData = message.data.filter(row =>
+                  !lastExistingTimestamp || row.timestamp > lastExistingTimestamp
+                );
+
+                if (newData.length === 0) {
+                  console.log(`[WebSocket] ⏭️  SKIPPED: All ${message.data.length} points already exist | Total: ${prev.length}`);
+                  return prev;
+                }
+
+                const combined = [...prev, ...newData];
+                console.log(`[WebSocket] ➕ APPEND: ${newData.length} new points (filtered from ${message.data.length}) | Previous: ${prev.length} | New Total: ${combined.length}`);
+                return combined;
+              });
+            }
+          } catch (error) {
+            console.error('[WebSocket] Error parsing message:', error);
+          }
+        };
+
+        ws.onerror = (error) => {
+          console.error('[WebSocket] Error:', error);
+        };
+
+        ws.onclose = (event) => {
+          if (isUnmountedRef.current) return;
+
+          console.log(`[WebSocket] Disconnected (code: ${event.code})`);
+          setConnectionStatus('disconnected');
+          wsRef.current = null;
+
+          // Auto-reconnect after delay
+          console.log(`[WebSocket] Reconnecting in ${RECONNECT_DELAY}ms...`);
+          reconnectTimeoutRef.current = setTimeout(() => {
+            if (!isUnmountedRef.current) {
+              connect();
+            }
+          }, RECONNECT_DELAY);
+        };
+
+        wsRef.current = ws;
+      } catch (error) {
+        console.error('[WebSocket] Connection error:', error);
+        setConnectionStatus('disconnected');
+
+        // Retry connection
+        reconnectTimeoutRef.current = setTimeout(() => {
+          if (!isUnmountedRef.current) {
+            connect();
+          }
+        }, RECONNECT_DELAY);
+      }
+    };
+
+    connect();
+
+    return () => {
+      isUnmountedRef.current = true;
+
+      // Clear reconnect timeout
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+
+      // Close WebSocket connection
+      if (wsRef.current) {
+        console.log('[WebSocket] Closing connection...');
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+    };
   }, []);
 
   return (
@@ -84,10 +201,10 @@ export default function Home() {
           <TabsTrigger value="liquid">Liquid Motor</TabsTrigger>
         </TabsList>
         <TabsContent value="solid">
-          <SolidUI telemetryData={telemetryData} connectionStatus={connectionStatus} />
+          <SolidUI telemetryData={telemetryData} connectionStatus={connectionStatus} startTime={startTimeRef.current} />
         </TabsContent>
         <TabsContent value="liquid">
-          <LiquidUI telemetryData={telemetryData} connectionStatus={connectionStatus} />
+          <LiquidUI telemetryData={telemetryData} connectionStatus={connectionStatus} startTime={startTimeRef.current} />
         </TabsContent>
       </Tabs>
     </main>
