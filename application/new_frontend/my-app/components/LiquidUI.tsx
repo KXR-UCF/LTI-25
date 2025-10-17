@@ -94,7 +94,7 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime, s
   const latestData = useMemo(() => {
     if (telemetryData.length === 0) {
       return {
-        cell1: 0, cell2: 0, cell3: 0, total: 0, peakNetForce: 0,
+        total: 0, peakNetForce: 0,
         weight: 0, pressure: 0, pt2: 0, pt3: 0, pt4: 0, pt5: 0, pt6: 0,
         chamber: 0, nozzle: 0
       };
@@ -109,9 +109,6 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime, s
     }
 
     return {
-      cell1: latest.cell1_force || 0,
-      cell2: latest.cell2_force || 0,
-      cell3: latest.cell3_force || 0,
       total: currentNetForce,
       peakNetForce,
       weight: latest.weight_load_cell || 0,

@@ -13,14 +13,6 @@ interface TelemetryRow {
   cell3_force: number | null;
   net_force: number | null;
   pressure_pt1: number | null;
-  pressure_pt2: number | null;
-  pressure_pt3: number | null;
-  pressure_pt4: number | null;
-  pressure_pt5: number | null;
-  pressure_pt6: number | null;
-  weight_load_cell: number | null;
-  chamber_temp: number | null;
-  nozzle_temp: number | null;
 }
 
 interface SolidUIProps {
@@ -28,11 +20,6 @@ interface SolidUIProps {
   connectionStatus: 'disconnected' | 'connecting' | 'connected';
   startTime: number | null;
   switchStates: {
-    switch1: boolean;
-    switch2: boolean;
-    switch3: boolean;
-    switch4: boolean;
-    switch5: boolean;
     switch6: boolean;
     launchKey: boolean;
     abort: boolean;
@@ -93,8 +80,10 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
   const latestData = useMemo(() => {
     if (telemetryData.length === 0) {
       return {
-        cell1: 0, cell2: 0, cell3: 0, total: 0,
-        peakNetForce: 0, peakPressure: 0, pressure: 0
+        total: 0,
+        peakNetForce: 0,
+        pressure: 0,
+        peakPressure: 0
       };
     }
 
@@ -111,9 +100,6 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
     }
 
     return {
-      cell1: latest.cell1_force || 0,
-      cell2: latest.cell2_force || 0,
-      cell3: latest.cell3_force || 0,
       total: currentNetForce,
       peakNetForce,
       pressure: currentPressure,
