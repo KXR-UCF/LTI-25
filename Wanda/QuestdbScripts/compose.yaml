@@ -9,14 +9,14 @@ services:
     volumes:
       - questdb-data:/var/lib/questdb
 
-  grafana:
-    image: "grafana/grafana-oss"
-    ports:
-      - "3000:3000"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    volumes:
-      - grafana-data:/var/lib/grafana
+  # grafana:
+  #   image: "grafana/grafana-oss"
+  #   ports:
+  #     - "3000:3000"
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
+  #   volumes:
+  #     - grafana-data:/var/lib/grafana
   
 volumes:
   questdb-data: {}
