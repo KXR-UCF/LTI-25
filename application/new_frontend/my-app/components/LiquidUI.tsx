@@ -27,34 +27,24 @@ interface LiquidUIProps {
   telemetryData: TelemetryRow[];
   connectionStatus: 'disconnected' | 'connecting' | 'connected';
   startTime: number | null;
+  switchStates: {
+    switch1: boolean;
+    switch2: boolean;
+    switch3: boolean;
+    switch4: boolean;
+    switch5: boolean;
+    switch6: boolean;
+    launchKey: boolean;
+    abort: boolean;
+  };
 }
 
-export default function LiquidUI({ telemetryData, connectionStatus, startTime }: LiquidUIProps) {
+export default function LiquidUI({ telemetryData, connectionStatus, startTime, switchStates }: LiquidUIProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
   // Peak value tracking
   const [peakNetForce, setPeakNetForce] = useState(0);
-
-  // System control states
-  const [switchStates, setSwitchStates] = useState({
-    switch1: false,
-    switch2: false,
-    switch3: false,
-    switch4: false,
-    switch5: false,
-    switch6: false,
-    launchKey: false,
-    abort: false
-  });
-
-  // Toggle handler for switches
-  const toggleSwitch = (switchName: keyof typeof switchStates) => {
-    setSwitchStates(prev => ({
-      ...prev,
-      [switchName]: !prev[switchName]
-    }));
-  };
 
   // Convert telemetry data to uPlot format for load cells
   const loadCellData = useMemo((): uPlot.AlignedData => {
@@ -430,8 +420,7 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime }:
               ].map(({ key, label }) => (
                 <div
                   key={key}
-                  onClick={() => toggleSwitch(key as keyof typeof switchStates)}
-                  className={`flex flex-col p-3 rounded-lg border transition-all duration-300 cursor-pointer justify-center items-center space-y-2 ${
+                  className={`flex flex-col p-3 rounded-lg border transition-all duration-300 justify-center items-center space-y-2 ${
                     switchStates[key as keyof typeof switchStates]
                       ? 'bg-green-100 dark:bg-green-900/30 border-green-500/50'
                       : 'bg-red-100 dark:bg-red-900/30 border-red-500/50'
@@ -451,8 +440,7 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime }:
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div
-                onClick={() => toggleSwitch('launchKey')}
-                className={`flex flex-col p-3 rounded-lg border transition-all duration-300 cursor-pointer justify-center items-center space-y-2 ${
+                className={`flex flex-col p-3 rounded-lg border transition-all duration-300 justify-center items-center space-y-2 ${
                   switchStates.launchKey
                     ? 'bg-green-100 dark:bg-green-900/30 border-green-500/50'
                     : 'bg-red-100 dark:bg-red-900/30 border-red-500/50'
@@ -469,8 +457,7 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime }:
                 </p>
               </div>
               <div
-                onClick={() => toggleSwitch('abort')}
-                className="flex flex-col p-3 rounded-lg border transition-all duration-300 cursor-pointer bg-red-100 dark:bg-red-900/30 border-red-500/50 justify-center items-center space-y-2"
+                className="flex flex-col p-3 rounded-lg border transition-all duration-300 bg-red-100 dark:bg-red-900/30 border-red-500/50 justify-center items-center space-y-2"
               >
                 <div className="flex items-center gap-2">
                   <p className="text-xs font-semibold text-gray-900 dark:text-white">ABORT</p>

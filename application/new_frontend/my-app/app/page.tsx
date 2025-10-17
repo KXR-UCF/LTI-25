@@ -40,6 +40,18 @@ export default function Home() {
   const isFirstMessageRef = useRef(true);
   const startTimeRef = useRef<number | null>(null);  // Store the initial start time
 
+  // Switch states received from socket_client via server.js
+  const [switchStates, setSwitchStates] = useState({
+    switch1: false,
+    switch2: false,
+    switch3: false,
+    switch4: false,
+    switch5: false,
+    switch6: false,
+    launchKey: false,
+    abort: false
+  });
+
   // WebSocket connection for live 60Hz telemetry updates
   useEffect(() => {
     isUnmountedRef.current = false;
@@ -114,6 +126,15 @@ export default function Home() {
                 console.log(`[WebSocket] ➕ APPEND: ${newData.length} new points (filtered from ${message.data.length}) | Previous: ${prev.length} | New Total: ${combined.length}`);
                 return combined;
               });
+            } else if (message.type === 'switch_state_update') {
+              // Handle switch state updates from socket_client
+              const { switch: switchName, state } = message.data;
+              console.log(`[WebSocket] 🎚️  Switch Update: ${switchName} = ${state}`);
+
+              setSwitchStates(prev => ({
+                ...prev,
+                [switchName]: state
+              }));
             }
           } catch (error) {
             console.error('[WebSocket] Error parsing message:', error);
@@ -201,10 +222,10 @@ export default function Home() {
           <TabsTrigger value="liquid">Liquid Motor</TabsTrigger>
         </TabsList>
         <TabsContent value="solid">
-          <SolidUI telemetryData={telemetryData} connectionStatus={connectionStatus} startTime={startTimeRef.current} />
+          <SolidUI telemetryData={telemetryData} connectionStatus={connectionStatus} startTime={startTimeRef.current} switchStates={switchStates} />
         </TabsContent>
         <TabsContent value="liquid">
-          <LiquidUI telemetryData={telemetryData} connectionStatus={connectionStatus} startTime={startTimeRef.current} />
+          <LiquidUI telemetryData={telemetryData} connectionStatus={connectionStatus} startTime={startTimeRef.current} switchStates={switchStates} />
         </TabsContent>
       </Tabs>
     </main>

@@ -1,5 +1,7 @@
 const WebSocket = require('ws');
 const { Pool } = require('pg');
+const fs = require('fs');
+const readline = require('readline');
 
 process.env.TZ = 'UTC';
 
@@ -106,9 +108,176 @@ wss.on('listening', () => {
   console.log('Polling at 60Hz');
 });
 
+// Named pipe for receiving switch states from socket_client.py
+const PIPE_PATH = '/tmp/switch_pipe';
+let pipeStream = null;
+let readlineInterface = null;
+
+// Parse switch message into state object
+function parseSwitchMessage(msg) {
+  const trimmed = msg.trim();
+
+  // "1 Open" / "1 Close" → switches 1-6
+  if (/^\d\s+(Open|Close)$/.test(trimmed)) {
+    const switchNum = trimmed[0];
+    const state = trimmed.includes('Open');
+    const switchMap = {
+      '1': 'switch1',  // NOX FILL
+      '2': 'switch2',  // NOX VENT
+      '3': 'switch3',  // NOX RELIEF
+      '4': 'switch4',  // N2 FILL
+      '5': 'switch5',  // N2 VENT
+      '6': 'switch6',  // CONTINUITY
+    };
+    return {
+      switch: switchMap[switchNum],
+      state: state,
+      message: trimmed
+    };
+  }
+
+  // "ENABLE FIRE" / "DISABLE FIRE"
+  if (trimmed === 'ENABLE FIRE' || trimmed === 'DISABLE FIRE') {
+    return {
+      switch: 'launchKey',
+      state: trimmed === 'ENABLE FIRE',
+      message: trimmed
+    };
+  }
+
+  // "FIRE"
+  if (trimmed === 'FIRE') {
+    return {
+      switch: 'abort',
+      state: true,
+      message: trimmed
+    };
+  }
+
+  return null;
+}
+
+// Broadcast switch state to all WebSocket clients
+function broadcastSwitchState(switchState) {
+  if (!switchState) return;
+
+  const message = {
+    type: 'switch_state_update',
+    data: switchState
+  };
+
+  const messageString = JSON.stringify(message);
+  let broadcastCount = 0;
+
+  clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(messageString);
+      broadcastCount++;
+    }
+  });
+
+  if (broadcastCount > 0) {
+    console.log(`🎚️  Switch Update: ${switchState.switch} = ${switchState.state} | Broadcasted to ${broadcastCount} clients`);
+  }
+}
+
+// Read from named pipe
+function setupNamedPipe() {
+  console.log(`📡 Opening named pipe: ${PIPE_PATH}`);
+
+  if (!fs.existsSync(PIPE_PATH)) {
+    console.log(`⚠️  Pipe does not exist. Waiting for socket_client.py to create it...`);
+    // Check every 2 seconds if pipe was created
+    const checkInterval = setInterval(() => {
+      if (fs.existsSync(PIPE_PATH)) {
+        clearInterval(checkInterval);
+        openPipe();
+      }
+    }, 2000);
+  } else {
+    openPipe();
+  }
+}
+
+function openPipe() {
+  try {
+    pipeStream = fs.createReadStream(PIPE_PATH, { encoding: 'utf8' });
+    readlineInterface = readline.createInterface({
+      input: pipeStream,
+      crlfDelay: Infinity
+    });
+
+    readlineInterface.on('line', (line) => {
+      console.log(`📡 Pipe received: ${line}`);
+      const switchState = parseSwitchMessage(line);
+      broadcastSwitchState(switchState);
+    });
+
+    pipeStream.on('error', (error) => {
+      console.error('❌ Pipe error:', error);
+      // Clean up before reopening
+      if (readlineInterface) {
+        readlineInterface.close();
+        readlineInterface = null;
+      }
+      if (pipeStream) {
+        pipeStream.destroy();
+        pipeStream = null;
+      }
+      // Try to reopen after a delay
+      setTimeout(() => {
+        console.log('🔄 Attempting to reopen pipe...');
+        setupNamedPipe();
+      }, 2000);
+    });
+
+    pipeStream.on('end', () => {
+      console.log('📡 Pipe closed, reopening...');
+      // Clean up before reopening
+      if (readlineInterface) {
+        readlineInterface.close();
+        readlineInterface = null;
+      }
+      if (pipeStream) {
+        pipeStream.destroy();
+        pipeStream = null;
+      }
+      setTimeout(() => {
+        setupNamedPipe();
+      }, 1000);
+    });
+
+    console.log('✅ Named pipe opened successfully');
+  } catch (error) {
+    console.error('❌ Error opening pipe:', error);
+    setTimeout(() => {
+      setupNamedPipe();
+    }, 2000);
+  }
+}
+
+// Initialize named pipe reader
+setupNamedPipe();
+
 process.on('SIGINT', async () => {
   console.log('Shutting down...');
+
+  // Close all WebSocket clients
   clients.forEach(client => client.close());
+
+  // Close named pipe
+  if (readlineInterface) {
+    readlineInterface.close();
+    console.log('✅ Closed readline interface');
+  }
+  if (pipeStream) {
+    pipeStream.destroy();
+    console.log('✅ Closed pipe stream');
+  }
+
+  // Close database pool
   await pool.end();
+  console.log('✅ Closed database pool');
+
   process.exit(0);
 });

@@ -27,30 +27,25 @@ interface SolidUIProps {
   telemetryData: TelemetryRow[];
   connectionStatus: 'disconnected' | 'connecting' | 'connected';
   startTime: number | null;
+  switchStates: {
+    switch1: boolean;
+    switch2: boolean;
+    switch3: boolean;
+    switch4: boolean;
+    switch5: boolean;
+    switch6: boolean;
+    launchKey: boolean;
+    abort: boolean;
+  };
 }
 
-export default function SolidUI({ telemetryData, connectionStatus, startTime }: SolidUIProps) {
+export default function SolidUI({ telemetryData, connectionStatus, startTime, switchStates }: SolidUIProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
   // Peak value tracking
   const [peakNetForce, setPeakNetForce] = useState(0);
   const [peakPressure, setPeakPressure] = useState(0);
-
-  // System control states
-  const [switchStates, setSwitchStates] = useState({
-    continuity: false,
-    launchKey: false,
-    abort: false
-  });
-
-  // Toggle handler for switches
-  const toggleSwitch = (switchName: keyof typeof switchStates) => {
-    setSwitchStates(prev => ({
-      ...prev,
-      [switchName]: !prev[switchName]
-    }));
-  };
 
   // Convert telemetry data to uPlot format for load cells
   const loadCellData = useMemo((): uPlot.AlignedData => {
@@ -378,9 +373,8 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime }: 
           <CardContent className="h-full flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-3 flex-1">
               <div
-                onClick={() => toggleSwitch('continuity')}
-                className={`flex flex-col p-4 rounded-lg border transition-all duration-300 cursor-pointer justify-center items-center space-y-3 ${
-                  switchStates.continuity
+                className={`flex flex-col p-4 rounded-lg border transition-all duration-300 justify-center items-center space-y-3 ${
+                  switchStates.switch6
                     ? 'bg-green-100 dark:bg-green-900/30 border-green-500/50'
                     : 'bg-red-100 dark:bg-red-900/30 border-red-500/50'
                 }`}
@@ -388,16 +382,15 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime }: 
                 <div className="flex items-center gap-2">
                   <p className="text-base font-semibold text-gray-900 dark:text-white">CONTINUITY</p>
                   <div className={`w-3 h-3 rounded-full ${
-                    switchStates.continuity ? 'bg-green-500' : 'bg-red-500'
+                    switchStates.switch6 ? 'bg-green-500' : 'bg-red-500'
                   }`}></div>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-white/70 font-medium">
-                  {switchStates.continuity ? 'ACTIVE' : 'INACTIVE'}
+                  {switchStates.switch6 ? 'ACTIVE' : 'INACTIVE'}
                 </p>
               </div>
               <div
-                onClick={() => toggleSwitch('launchKey')}
-                className={`flex flex-col p-4 rounded-lg border transition-all duration-300 cursor-pointer justify-center items-center space-y-3 ${
+                className={`flex flex-col p-4 rounded-lg border transition-all duration-300 justify-center items-center space-y-3 ${
                   switchStates.launchKey
                     ? 'bg-green-100 dark:bg-green-900/30 border-green-500/50'
                     : 'bg-red-100 dark:bg-red-900/30 border-red-500/50'
@@ -415,8 +408,7 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime }: 
               </div>
             </div>
             <div
-              onClick={() => toggleSwitch('abort')}
-              className="flex flex-col p-4 rounded-lg border transition-all duration-300 cursor-pointer bg-red-100 dark:bg-red-900/30 border-red-500/50 justify-center items-center space-y-3 flex-1"
+              className="flex flex-col p-4 rounded-lg border transition-all duration-300 bg-red-100 dark:bg-red-900/30 border-red-500/50 justify-center items-center space-y-3 flex-1"
             >
               <div className="flex items-center gap-2">
                 <p className="text-base font-semibold text-gray-900 dark:text-white">ABORT SYSTEM</p>
