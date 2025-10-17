@@ -1,11 +1,4 @@
-# Rocket Telemetry System - Setup & Operation Guide
-
-## System Overview
-
-A unified real-time telemetry system that monitors rocket engine performance through:
-- **QuestDB**: Time-series database storing all telemetry data
-- **WebSocket Server**: Real-time data streaming at 60Hz
-- **Frontend UIs**: Web interfaces for solid and liquid rocket monitoring
+# Cosmo System - Telemetry Setup & Operation Guide
 
 ## Complete System Setup
 
@@ -56,14 +49,13 @@ npm start
 
 ### 5. Start Frontend Interface (COSMO)
 ```bash
-cd frontend/frontend/
+cd new_frontend/
 npm install
+npm install uplot-react uplot
 npm run dev
 ```
 - Interface available at http://localhost:3000
 - Connects to WebSocket server automatically
-- Click "Switch UI" button to toggle between Solid UI and Liquid UI modes
-
 
 ## Shutting Down the System
 
@@ -86,6 +78,6 @@ questdb stop
 
 ## File Locations
 - **Database Setup**: QuestDB web console
-- **Backend Server**: `solid-ui/backend/server.js`
-- **Frontend**: `solid-ui/frontend/`
+- **Backend Server**: `backend/server.js`
+- **Frontend**: `new_frontend/`
 - **Documentation**: `application/README.md` (this file)
