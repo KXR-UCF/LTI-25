@@ -32,8 +32,7 @@ try:
                 print(f"No response | msg:<{msg}>")
                 break
             # check for response
-            response_msg = s.recv(1024)
-            response_msg = response_msg.decode().strip()
+            response_msg = s.recv(1024).decode().strip()
             response_ack = (response_msg == f"ACK: {msg.decode().strip()}")
 
         # do something after a successful response
