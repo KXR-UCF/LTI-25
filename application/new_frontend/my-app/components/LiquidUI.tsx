@@ -96,7 +96,7 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime, s
       return {
         total: 0, peakNetForce: 0,
         weight: 0, pressure: 0, pt2: 0, pt3: 0, pt4: 0, pt5: 0, pt6: 0,
-        chamber: 0, nozzle: 0
+        chamber: 0, nozzle: 0,
       };
     }
 
