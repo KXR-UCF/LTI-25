@@ -23,10 +23,17 @@ interface TelemetryRow {
   nozzle_temp: number | null;
 }
 
-interface WebSocketMessage {
-  type: string;
+interface TelemetryMessage {
+  type: 'telemetry_update';
   data: TelemetryRow[];
 }
+
+interface SwitchStateMessage {
+  type: 'switch_state_update';
+  data: { switch: string; state: boolean };
+}
+
+type WebSocketMessage = TelemetryMessage | SwitchStateMessage;
 
 const WEBSOCKET_URL = 'ws://localhost:8080';
 const RECONNECT_DELAY = 2000; // 2 seconds
