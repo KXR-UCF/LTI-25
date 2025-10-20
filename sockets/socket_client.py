@@ -13,14 +13,120 @@ if not os.path.exists(PIPE_PATH):
     os.mkfifo(PIPE_PATH)
     print(f"Created named pipe: {PIPE_PATH}")
 
-# Open pipe in non-blocking mode to avoid hanging if server.js isn't running
-try:
-    pipe_fd = os.open(PIPE_PATH, os.O_WRONLY | os.O_NONBLOCK)
-    pipe = os.fdopen(pipe_fd, 'w')
-    print(f"Opened named pipe for writing")
-except OSError as e:
-    print(f"Warning: Could not open pipe (server.js may not be running): {e}")
-    pipe = None
+# Track current switch states to resend on reconnection
+current_switch_states = {
+    'switch1': False,
+    'switch2': False,
+    'switch3': False,
+    'switch4': False,
+    'switch5': False,
+    'switch6': False,
+    'launchKey': False,
+    'abort': False
+}
+
+# Function to open/reopen pipe
+def open_pipe():
+    try:
+        pipe_fd = os.open(PIPE_PATH, os.O_WRONLY | os.O_NONBLOCK)
+        pipe = os.fdopen(pipe_fd, 'w')
+        print(f"✅ Opened named pipe for writing")
+        return pipe
+    except OSError as e:
+        print(f"⚠️  Could not open pipe (server.js may not be running): {e}")
+        return None
+
+# Function to parse and track switch state from message
+def parse_and_track_state(msg_str):
+    """Parse message and update current_switch_states. Returns True if it's a switch message."""
+    # "1 Open" / "1 Close" → switches 1-6
+    if len(msg_str) >= 3 and msg_str[0].isdigit() and (msg_str.endswith('Open') or msg_str.endswith('Close')):
+        switch_num = msg_str[0]
+        state = msg_str.endswith('Open')
+        switch_map = {
+            '1': 'switch1',
+            '2': 'switch2',
+            '3': 'switch3',
+            '4': 'switch4',
+            '5': 'switch5',
+            '6': 'switch6',
+        }
+        if switch_num in switch_map:
+            current_switch_states[switch_map[switch_num]] = state
+            return True
+
+    # "ENABLE FIRE" / "DISABLE FIRE"
+    if msg_str == 'ENABLE FIRE' or msg_str == 'DISABLE FIRE':
+        current_switch_states['launchKey'] = (msg_str == 'ENABLE FIRE')
+        return True
+
+    # "FIRE"
+    if msg_str == 'FIRE':
+        current_switch_states['abort'] = True
+        return True
+
+    # "ABORT OFF" / "FIRE OFF"
+    if msg_str == 'ABORT OFF' or msg_str == 'FIRE OFF':
+        current_switch_states['abort'] = False
+        return True
+
+    return False
+
+# Function to resend all current switch states
+def resend_all_states(pipe):
+    """Send all current switch states to pipe after reconnection."""
+    if not pipe:
+        return
+
+    print(f"📡 Resending current switch states to reconnected pipe...")
+
+    # Map switch states back to hardware message format
+    switch_to_num = {
+        'switch1': '1',
+        'switch2': '2',
+        'switch3': '3',
+        'switch4': '4',
+        'switch5': '5',
+        'switch6': '6',
+    }
+
+    try:
+        # Send switch 1-6 states
+        for switch_name, switch_num in switch_to_num.items():
+            state = current_switch_states[switch_name]
+            msg = f"{switch_num} {'Open' if state else 'Close'}"
+            pipe.write(msg + '\n')
+            pipe.flush()
+            print(f"  → {msg}")
+
+        # Send launchKey state
+        launch_msg = 'ENABLE FIRE' if current_switch_states['launchKey'] else 'DISABLE FIRE'
+        pipe.write(launch_msg + '\n')
+        pipe.flush()
+        print(f"  → {launch_msg}")
+
+        # Send abort state
+        if current_switch_states['abort']:
+            pipe.write('FIRE\n')
+            pipe.flush()
+            print(f"  → FIRE")
+        else:
+            pipe.write('FIRE OFF\n')
+            pipe.flush()
+            print(f"  → FIRE OFF")
+
+        print(f"✅ All states resent successfully")
+    except Exception as e:
+        print(f"⚠️  Error resending states: {e}")
+        return None
+
+    return pipe
+
+# Open pipe initially
+pipe = open_pipe()
+if pipe:
+    # Resend current states on initial connection
+    pipe = resend_all_states(pipe)
 
 try:
     while True:
@@ -56,16 +162,37 @@ try:
         if response_ack:
             print(f"Received Response: {response_msg}")
 
+            msg_str = msg.decode().strip()
+
+            # Track switch state changes
+            parse_and_track_state(msg_str)
+
             # Write switch state to named pipe for server.js
             if pipe:
                 try:
-                    pipe.write(msg.decode().strip() + '\n')
+                    pipe.write(msg_str + '\n')
                     pipe.flush()
                 except BrokenPipeError:
-                    print("Warning: Pipe broken (server.js disconnected)")
+                    print("⚠️  Pipe broken (server.js disconnected) - will attempt reconnection")
                     pipe = None
                 except Exception as e:
-                    print(f"Warning: Error writing to pipe: {e}")
+                    print(f"⚠️  Error writing to pipe: {e}")
+                    pipe = None
+            else:
+                # Try to reconnect pipe
+                print(f"🔄 Attempting to reconnect pipe...")
+                pipe = open_pipe()
+                if pipe:
+                    # Resend all current states after reconnection
+                    pipe = resend_all_states(pipe)
+                    # Try to send current message again
+                    if pipe:
+                        try:
+                            pipe.write(msg_str + '\n')
+                            pipe.flush()
+                        except Exception as e:
+                            print(f"⚠️  Error writing after reconnect: {e}")
+                            pipe = None
 
 except KeyboardInterrupt:
     print("Interrupted by user")

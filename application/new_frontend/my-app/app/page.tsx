@@ -33,7 +33,21 @@ interface SwitchStateMessage {
   data: { switch: string; state: boolean };
 }
 
-type WebSocketMessage = TelemetryMessage | SwitchStateMessage;
+interface InitialSwitchStatesMessage {
+  type: 'initial_switch_states';
+  data: {
+    switch1: boolean;
+    switch2: boolean;
+    switch3: boolean;
+    switch4: boolean;
+    switch5: boolean;
+    switch6: boolean;
+    launchKey: boolean;
+    abort: boolean;
+  };
+}
+
+type WebSocketMessage = TelemetryMessage | SwitchStateMessage | InitialSwitchStatesMessage;
 
 const WEBSOCKET_URL = 'ws://localhost:8080';
 const RECONNECT_DELAY = 2000; // 2 seconds
@@ -133,9 +147,21 @@ export default function Home() {
                 console.log(`[WebSocket] ➕ APPEND: ${newData.length} new points (filtered from ${message.data.length}) | Previous: ${prev.length} | New Total: ${combined.length}`);
                 return combined;
               });
+            } else if (message.type === 'initial_switch_states') {
+              // Handle initial switch states on connection
+              console.log(`[WebSocket] 🎚️  Initial Switch States:`, message.data);
+              setSwitchStates(message.data);
             } else if (message.type === 'switch_state_update') {
-              // Handle switch state updates from socket_client
+              // Handle live switch state updates from socket_client
               const { switch: switchName, state } = message.data;
+
+              // Validate switch name to prevent injection
+              const validSwitches = ['switch1', 'switch2', 'switch3', 'switch4', 'switch5', 'switch6', 'launchKey', 'abort'];
+              if (!validSwitches.includes(switchName)) {
+                console.warn(`[WebSocket] ⚠️  Invalid switch name: ${switchName}`);
+                return;
+              }
+
               console.log(`[WebSocket] 🎚️  Switch Update: ${switchName} = ${state}`);
 
               setSwitchStates(prev => ({

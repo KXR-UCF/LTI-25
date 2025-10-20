@@ -19,6 +19,18 @@ const wss = new WebSocket.Server({ port: 8080 });
 const clients = new Set();
 let lastTimestamp = null;
 
+// Current switch states - persisted in memory
+const currentSwitchStates = {
+  switch1: false,
+  switch2: false,
+  switch3: false,
+  switch4: false,
+  switch5: false,
+  switch6: false,
+  launchKey: false,
+  abort: false
+};
+
 wss.on('connection', async (ws) => {
   console.log(`🔌 Client connected | Total clients: ${clients.size + 1}`);
 
@@ -49,6 +61,18 @@ wss.on('connection', async (ws) => {
     }
   } catch (error) {
     console.error('❌ Error sending initial data:', error);
+  }
+
+  // Send initial switch states to new client
+  try {
+    const initialSwitchMessage = {
+      type: 'initial_switch_states',
+      data: currentSwitchStates
+    };
+    ws.send(JSON.stringify(initialSwitchMessage));
+    console.log(`🎚️  Sent initial switch states to new client:`, currentSwitchStates);
+  } catch (error) {
+    console.error('❌ Error sending initial switch states:', error);
   }
 
   ws.on('close', () => {
@@ -113,6 +137,9 @@ const PIPE_PATH = '/tmp/switch_pipe';
 let pipeStream = null;
 let readlineInterface = null;
 
+// Valid switch names for validation
+const VALID_SWITCHES = ['switch1', 'switch2', 'switch3', 'switch4', 'switch5', 'switch6', 'launchKey', 'abort'];
+
 // Parse switch message into state object
 function parseSwitchMessage(msg) {
   const trimmed = msg.trim();
@@ -129,8 +156,15 @@ function parseSwitchMessage(msg) {
       '5': 'switch5',  // N2 VENT
       '6': 'switch6',  // CONTINUITY
     };
+
+    const switchName = switchMap[switchNum];
+    if (!switchName) {
+      console.warn(`⚠️  Invalid switch number: ${switchNum}`);
+      return null;
+    }
+
     return {
-      switch: switchMap[switchNum],
+      switch: switchName,
       state: state,
       message: trimmed
     };
@@ -145,7 +179,7 @@ function parseSwitchMessage(msg) {
     };
   }
 
-  // "FIRE"
+  // "FIRE" - can be both triggered and reset
   if (trimmed === 'FIRE') {
     return {
       switch: 'abort',
@@ -154,12 +188,32 @@ function parseSwitchMessage(msg) {
     };
   }
 
+  // "ABORT OFF" or "FIRE OFF" - reset abort state
+  if (trimmed === 'ABORT OFF' || trimmed === 'FIRE OFF') {
+    return {
+      switch: 'abort',
+      state: false,
+      message: trimmed
+    };
+  }
+
+  console.warn(`⚠️  Unknown message format: ${trimmed}`);
   return null;
 }
 
 // Broadcast switch state to all WebSocket clients
 function broadcastSwitchState(switchState) {
   if (!switchState) return;
+
+  // Validate switch name
+  if (!VALID_SWITCHES.includes(switchState.switch)) {
+    console.warn(`⚠️  Invalid switch name: ${switchState.switch}`);
+    return;
+  }
+
+  // Update current state in memory
+  currentSwitchStates[switchState.switch] = switchState.state;
+  console.log(`💾 Updated state: ${switchState.switch} = ${switchState.state}`);
 
   const message = {
     type: 'switch_state_update',
