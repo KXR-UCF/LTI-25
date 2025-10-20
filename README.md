@@ -53,25 +53,32 @@ A comprehensive telemetry and data visualization system with multiple UI interfa
 ### Running the Applications
 
 1. Start QuestDB
+
 2. Run the socket server:
    ```bash
-   cd questdb
+   cd sockets
    python socket_server.py
    ```
-3. Start the backend API:
-   ```bash
-   cd frontend/application/backend
-   npm start
-   ```
-4. Start the frontend applications:
-   ```bash
-   cd frontend/application/liquid-ui
-   npm run dev
 
-   # In another terminal
-   cd frontend/application/solid-ui
+3. Run the socket client (hardware interface):
+   ```bash
+   cd sockets
+   python socket_client.py
+   ```
+
+4. Start the backend API (WebSocket server for telemetry & switch states):
+   ```bash
+   cd application/backend
+   node server.js
+   ```
+
+5. Start the frontend application:
+   ```bash
+   cd application/new_frontend/my-app
    npm run dev
    ```
+
+The application will be available at `http://localhost:3000`
 
 ## Data Format
 
