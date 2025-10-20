@@ -126,8 +126,6 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime, s
   // Load cell chart options
   const loadCellOptions = useMemo((): uPlot.Options => {
     return {
-      width: 1200,
-      height: 500,
       class: 'load-cell-chart',
       cursor: {
         drag: {
@@ -193,8 +191,6 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime, s
   // Thermal chart options
   const thermalOptions = useMemo((): uPlot.Options => {
     return {
-      width: 1200,
-      height: 500,
       class: 'thermal-chart',
       cursor: {
         drag: {
@@ -258,7 +254,7 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime, s
               LOAD CELL TELEMETRY
             </CardTitle>
           </CardHeader>
-          <CardContent className="h-[550px]">
+          <CardContent className="h-[300px] sm:h-[350px] md:h-[400px] lg:h-[450px] xl:h-[500px] 2xl:h-[550px]">
             {telemetryData.length === 0 ? (
               <div className="w-full h-full flex flex-col items-center justify-center">
                 <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-3">
@@ -285,7 +281,7 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime, s
               THERMAL COUPLE TELEMETRY
             </CardTitle>
           </CardHeader>
-          <CardContent className="h-[550px]">
+          <CardContent className="h-[300px] sm:h-[350px] md:h-[400px] lg:h-[450px] xl:h-[500px] 2xl:h-[550px]">
             {telemetryData.length === 0 ? (
               <div className="w-full h-full flex flex-col items-center justify-center">
                 <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-3">
