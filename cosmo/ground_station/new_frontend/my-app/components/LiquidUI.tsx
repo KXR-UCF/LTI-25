@@ -126,6 +126,8 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime, s
   // Load cell chart options
   const loadCellOptions = useMemo((): uPlot.Options => {
     return {
+      width: 1000,
+      height: 400,
       class: 'load-cell-chart',
       cursor: {
         drag: {
@@ -191,6 +193,8 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime, s
   // Thermal chart options
   const thermalOptions = useMemo((): uPlot.Options => {
     return {
+      width: 1000,
+      height: 400,
       class: 'thermal-chart',
       cursor: {
         drag: {

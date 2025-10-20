@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "uplot": "^1.6.32",
-    "uplot-react": "^1.2.4"
-  }
-}

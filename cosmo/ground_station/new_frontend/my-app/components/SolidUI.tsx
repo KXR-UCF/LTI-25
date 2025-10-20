@@ -110,6 +110,8 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
   // Load cell chart options
   const loadCellOptions = useMemo((): uPlot.Options => {
     return {
+      width: 1000,
+      height: 400,
       class: 'load-cell-chart',
       cursor: {
         drag: {
@@ -175,6 +177,8 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
   // Pressure chart options
   const pressureOptions = useMemo((): uPlot.Options => {
     return {
+      width: 1000,
+      height: 400,
       class: 'pressure-chart',
       cursor: {
         drag: {
