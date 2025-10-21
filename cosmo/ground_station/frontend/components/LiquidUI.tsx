@@ -2,9 +2,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import UPlotChart from "@/components/UPlotChart";
-import uPlot from 'uplot';
-import { useMemo, useState } from 'react';
-import { useTheme } from 'next-themes';
+import uPlot from "uplot";
+import { useMemo, useState } from "react";
+import { useTheme } from "next-themes";
+
+import Chart from "./Chart";
 
 interface TelemetryRow {
   timestamp: string;
@@ -25,7 +27,7 @@ interface TelemetryRow {
 
 interface LiquidUIProps {
   telemetryData: TelemetryRow[];
-  connectionStatus: 'disconnected' | 'connecting' | 'connected';
+  connectionStatus: "disconnected" | "connecting" | "connected";
   startTime: number | null;
   switchStates: {
     switch1: boolean;
@@ -39,9 +41,14 @@ interface LiquidUIProps {
   };
 }
 
-export default function LiquidUI({ telemetryData, connectionStatus, startTime, switchStates }: LiquidUIProps) {
+export default function LiquidUI({
+  telemetryData,
+  connectionStatus,
+  startTime,
+  switchStates,
+}: LiquidUIProps) {
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === "dark";
 
   // Peak value tracking
   const [peakNetForce, setPeakNetForce] = useState(0);
@@ -58,7 +65,7 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime, s
     const cell3: (number | null)[] = [];
     const netForce: (number | null)[] = [];
 
-    telemetryData.forEach(row => {
+    telemetryData.forEach((row) => {
       const time = new Date(row.timestamp).getTime() / 1000;
       timestamps.push(time - startTime);
       cell1.push(row.cell1_force);
@@ -80,7 +87,7 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime, s
     const chamber: (number | null)[] = [];
     const nozzle: (number | null)[] = [];
 
-    telemetryData.forEach(row => {
+    telemetryData.forEach((row) => {
       const time = new Date(row.timestamp).getTime() / 1000;
       timestamps.push(time - startTime);
       chamber.push(row.chamber_temp);
@@ -94,9 +101,17 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime, s
   const latestData = useMemo(() => {
     if (telemetryData.length === 0) {
       return {
-        total: 0, peakNetForce: 0,
-        weight: 0, pressure: 0, pt2: 0, pt3: 0, pt4: 0, pt5: 0, pt6: 0,
-        chamber: 0, nozzle: 0
+        total: 0,
+        peakNetForce: 0,
+        weight: 0,
+        pressure: 0,
+        pt2: 0,
+        pt3: 0,
+        pt4: 0,
+        pt5: 0,
+        pt6: 0,
+        chamber: 0,
+        nozzle: 0,
       };
     }
 
@@ -119,191 +134,69 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime, s
       pt5: latest.pressure_pt5 || 0,
       pt6: latest.pressure_pt6 || 0,
       chamber: latest.chamber_temp || 0,
-      nozzle: latest.nozzle_temp || 0
+      nozzle: latest.nozzle_temp || 0,
     };
   }, [telemetryData, peakNetForce]);
-
-  // Load cell chart options
-  const loadCellOptions = useMemo((): uPlot.Options => {
-    return {
-      width: 1000,
-      height: 400,
-      class: 'load-cell-chart',
-      cursor: {
-        drag: {
-          x: true,
-          y: true,
-          uni: 50,
-        },
-        sync: {
-          key: 'telemetry',
-        },
-      },
-      scales: {
-        x: {
-          time: false,
-        },
-        y: {
-          auto: true,
-        },
-      },
-    axes: [
-      {
-        label: 'Runtime (s)',
-        stroke: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.6)',
-        grid: { stroke: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.1)', width: 1 },
-      },
-      {
-        label: 'Force (LBS)',
-        stroke: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.6)',
-        grid: { stroke: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.1)', width: 1 },
-        values: (u, vals) => vals.map(v => v + ' LBS'),
-        labelGap: 10,
-      },
-    ],
-    series: [
-      { label: 'Time' },
-      {
-        label: 'Load Cell 1',
-        stroke: '#10B981',
-        width: 2,
-      },
-      {
-        label: 'Load Cell 2',
-        stroke: '#F59E0B',
-        width: 2,
-      },
-      {
-        label: 'Load Cell 3',
-        stroke: '#EF4444',
-        width: 2,
-      },
-      {
-        label: 'Net Force',
-        stroke: '#3B82F6',
-        width: 2,
-      },
-    ],
-      legend: {
-        show: true,
-      },
-    };
-  }, [isDark]);
-
-  // Thermal chart options
-  const thermalOptions = useMemo((): uPlot.Options => {
-    return {
-      width: 1000,
-      height: 400,
-      class: 'thermal-chart',
-      cursor: {
-        drag: {
-          x: true,
-          y: true,
-          uni: 50,
-        },
-        sync: {
-          key: 'telemetry',
-        },
-      },
-      scales: {
-        x: {
-          time: false,
-        },
-        y: {
-          auto: true,
-        },
-      },
-    axes: [
-      {
-        label: 'Runtime (s)',
-        stroke: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.6)',
-        grid: { stroke: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.1)', width: 1 },
-      },
-      {
-        label: 'Temperature (°C)',
-        stroke: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.6)',
-        grid: { stroke: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.1)', width: 1 },
-        values: (u, vals) => vals.map(v => v + '°C'),
-        labelGap: 10,
-      },
-    ],
-    series: [
-      { label: 'Time' },
-      {
-        label: 'Chamber Temperature',
-        stroke: '#F97316',
-        width: 2,
-      },
-      {
-        label: 'Nozzle Temperature',
-        stroke: '#DC2626',
-        width: 2,
-      },
-    ],
-      legend: {
-        show: true,
-      },
-    };
-  }, [isDark]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
       {/* Left Column - Charts */}
       <div className="lg:col-span-3 grid grid-rows-2 gap-4">
         {/* Load Cell Chart */}
-        <Card className="bg-white dark:bg-gray-900/50 border-gray-200 dark:border-white/10 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold tracking-wider">
-              LOAD CELL TELEMETRY
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px] sm:h-[350px] md:h-[400px] lg:h-[450px] xl:h-[500px] 2xl:h-[550px]">
-            {telemetryData.length === 0 ? (
-              <div className="w-full h-full flex flex-col items-center justify-center">
-                <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-3">
-                  <svg className="w-6 h-6 text-gray-400 dark:text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <p className="text-sm font-medium text-gray-600 dark:text-white/60">No Data Detected</p>
-                <p className="text-xs text-gray-400 dark:text-white/40 mt-1">Waiting for telemetry data...</p>
-              </div>
-            ) : (
-              <UPlotChart
-                data={loadCellData}
-                options={loadCellOptions}
-              />
-            )}
-          </CardContent>
-        </Card>
+        <Chart
+          name={"LOAD CELL TELEMETRY "}
+          isDark={isDark}
+          chartClass={"load-cell-chart"}
+          axisLabel={"Force (LBS)"}
+          axisUnit={" LBS"}
+          lines={[
+            {
+              label: "Load Cell 1",
+              stroke: "#10B981",
+              width: 2,
+            },
+            {
+              label: "Load Cell 2",
+              stroke: "#F59E0B",
+              width: 2,
+            },
+            {
+              label: "Load Cell 3",
+              stroke: "#EF4444",
+              width: 2,
+            },
+            {
+              label: "Net Force",
+              stroke: "#3B82F6",
+              width: 2,
+            },
+          ]}
+          telemetryData={telemetryData}
+          data={loadCellData}
+        />
 
         {/* Thermal Chart */}
-        <Card className="bg-white dark:bg-gray-900/50 border-gray-200 dark:border-white/10 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold tracking-wider">
-              THERMAL COUPLE TELEMETRY
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px] sm:h-[350px] md:h-[400px] lg:h-[450px] xl:h-[500px] 2xl:h-[550px]">
-            {telemetryData.length === 0 ? (
-              <div className="w-full h-full flex flex-col items-center justify-center">
-                <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-3">
-                  <svg className="w-6 h-6 text-gray-400 dark:text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <p className="text-sm font-medium text-gray-600 dark:text-white/60">No Data Detected</p>
-                <p className="text-xs text-gray-400 dark:text-white/40 mt-1">Waiting for temperature data...</p>
-              </div>
-            ) : (
-              <UPlotChart
-                data={thermalData}
-                options={thermalOptions}
-              />
-            )}
-          </CardContent>
-        </Card>
+        <Chart
+          name={"THERMAL COUPLE TELEMETRY"}
+          isDark={isDark}
+          chartClass={"thermal-couple-chart"}
+          axisLabel={"Celcius (C)"}
+          axisUnit={" C"}
+          lines={[
+            {
+              label: "Chamber Temperature",
+              stroke: "#F97316",
+              width: 2,
+            },
+            {
+              label: "Nozzle Temperature",
+              stroke: "#DC2626",
+              width: 2,
+            },
+          ]}
+          telemetryData={telemetryData}
+          data={thermalData}
+        />
       </div>
 
       {/* Right Column - Measurements and controls */}
@@ -317,25 +210,40 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime, s
           <CardContent className="space-y-4 h-full flex flex-col">
             {/* Load Cells & Net Force */}
             <div className="flex-1">
-              <p className="text-xs font-semibold text-gray-500 dark:text-white/50 mb-2 uppercase tracking-wider">Force Sensors</p>
+              <p className="text-xs font-semibold text-gray-500 dark:text-white/50 mb-2 uppercase tracking-wider">
+                Force Sensors
+              </p>
               <div className="grid grid-cols-3 gap-3 h-[calc(100%-1.75rem)]">
-                {['total', 'peakNetForce', 'weight'].map((sensor) => (
-                  <div key={sensor} className="bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-white/10 p-3 flex flex-col justify-center items-center space-y-2">
+                {["total", "peakNetForce", "weight"].map((sensor) => (
+                  <div
+                    key={sensor}
+                    className="bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-white/10 p-3 flex flex-col justify-center items-center space-y-2"
+                  >
                     <div className="flex items-center gap-2">
                       <p className="text-xs font-semibold text-gray-900 dark:text-white tracking-wide leading-tight">
-                        {sensor === 'total' ? 'NET' :
-                         sensor === 'peakNetForce' ? 'PEAK' :
-                         'WEIGHT'}
+                        {sensor === "total"
+                          ? "NET"
+                          : sensor === "peakNetForce"
+                          ? "PEAK"
+                          : "WEIGHT"}
                       </p>
-                      <div className={`w-2 h-2 rounded-full ${
-                        latestData[sensor as keyof typeof latestData] > 0 ? 'bg-green-500' : 'bg-red-500'
-                      }`}></div>
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          latestData[sensor as keyof typeof latestData] > 0
+                            ? "bg-green-500"
+                            : "bg-red-500"
+                        }`}
+                      ></div>
                     </div>
                     <div className="text-center">
                       <p className="text-base font-bold text-gray-900 dark:text-white">
-                        {latestData[sensor as keyof typeof latestData].toFixed(1)}
+                        {latestData[sensor as keyof typeof latestData].toFixed(
+                          1
+                        )}
                       </p>
-                      <p className="text-xs text-gray-600 dark:text-white/70 font-medium">LBS</p>
+                      <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
+                        LBS
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -344,53 +252,86 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime, s
 
             {/* Pressure Transducers */}
             <div className="flex-1">
-              <p className="text-xs font-semibold text-gray-500 dark:text-white/50 mb-2 uppercase tracking-wider">Pressure</p>
+              <p className="text-xs font-semibold text-gray-500 dark:text-white/50 mb-2 uppercase tracking-wider">
+                Pressure
+              </p>
               <div className="grid grid-cols-3 grid-rows-2 gap-3 h-[calc(100%-1.75rem)]">
-                {['pressure', 'pt2', 'pt3', 'pt4', 'pt5', 'pt6'].map((sensor) => (
-                  <div key={sensor} className="bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-white/10 p-3 flex flex-col justify-center items-center space-y-2">
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs font-semibold text-gray-900 dark:text-white tracking-wide leading-tight">
-                        {sensor === 'pressure' ? 'PT1' :
-                         sensor === 'pt2' ? 'PT2' :
-                         sensor === 'pt3' ? 'PT3' :
-                         sensor === 'pt4' ? 'PT4' :
-                         sensor === 'pt5' ? 'PT5' :
-                         'PT6'}
-                      </p>
-                      <div className={`w-2 h-2 rounded-full ${
-                        latestData[sensor as keyof typeof latestData] > 0 ? 'bg-green-500' : 'bg-red-500'
-                      }`}></div>
+                {["pressure", "pt2", "pt3", "pt4", "pt5", "pt6"].map(
+                  (sensor) => (
+                    <div
+                      key={sensor}
+                      className="bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-white/10 p-3 flex flex-col justify-center items-center space-y-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-semibold text-gray-900 dark:text-white tracking-wide leading-tight">
+                          {sensor === "pressure"
+                            ? "PT1"
+                            : sensor === "pt2"
+                            ? "PT2"
+                            : sensor === "pt3"
+                            ? "PT3"
+                            : sensor === "pt4"
+                            ? "PT4"
+                            : sensor === "pt5"
+                            ? "PT5"
+                            : "PT6"}
+                        </p>
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            latestData[sensor as keyof typeof latestData] > 0
+                              ? "bg-green-500"
+                              : "bg-red-500"
+                          }`}
+                        ></div>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-base font-bold text-gray-900 dark:text-white">
+                          {latestData[
+                            sensor as keyof typeof latestData
+                          ].toFixed(1)}
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
+                          PSI
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <p className="text-base font-bold text-gray-900 dark:text-white">
-                        {latestData[sensor as keyof typeof latestData].toFixed(1)}
-                      </p>
-                      <p className="text-xs text-gray-600 dark:text-white/70 font-medium">PSI</p>
-                    </div>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
             </div>
 
             {/* Temperature */}
             <div className="flex-1">
-              <p className="text-xs font-semibold text-gray-500 dark:text-white/50 mb-2 uppercase tracking-wider">Temperature</p>
+              <p className="text-xs font-semibold text-gray-500 dark:text-white/50 mb-2 uppercase tracking-wider">
+                Temperature
+              </p>
               <div className="grid grid-cols-2 gap-3 h-[calc(100%-1.75rem)]">
-                {['chamber', 'nozzle'].map((sensor) => (
-                  <div key={sensor} className="bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-white/10 p-3 flex flex-col justify-center items-center space-y-2">
+                {["chamber", "nozzle"].map((sensor) => (
+                  <div
+                    key={sensor}
+                    className="bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-white/10 p-3 flex flex-col justify-center items-center space-y-2"
+                  >
                     <div className="flex items-center gap-2">
                       <p className="text-xs font-semibold text-gray-900 dark:text-white tracking-wide leading-tight">
-                        {sensor === 'chamber' ? 'CHAMBER' : 'NOZZLE'}
+                        {sensor === "chamber" ? "CHAMBER" : "NOZZLE"}
                       </p>
-                      <div className={`w-2 h-2 rounded-full ${
-                        latestData[sensor as keyof typeof latestData] > 0 ? 'bg-green-500' : 'bg-red-500'
-                      }`}></div>
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          latestData[sensor as keyof typeof latestData] > 0
+                            ? "bg-green-500"
+                            : "bg-red-500"
+                        }`}
+                      ></div>
                     </div>
                     <div className="text-center">
                       <p className="text-base font-bold text-gray-900 dark:text-white">
-                        {latestData[sensor as keyof typeof latestData].toFixed(1)}
+                        {latestData[sensor as keyof typeof latestData].toFixed(
+                          1
+                        )}
                       </p>
-                      <p className="text-xs text-gray-600 dark:text-white/70 font-medium">°C</p>
+                      <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
+                        °C
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -408,29 +349,37 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime, s
           <CardContent className="h-full flex flex-col gap-3">
             <div className="grid grid-cols-2 gap-3 grid-rows-3 flex-1">
               {[
-                { key: 'switch1', label: 'NOX FILL' },
-                { key: 'switch2', label: 'NOX VENT' },
-                { key: 'switch3', label: 'NOX RELIEF' },
-                { key: 'switch4', label: 'N2 FILL' },
-                { key: 'switch5', label: 'N2 VENT' },
-                { key: 'switch6', label: 'CONTINUITY' },
+                { key: "switch1", label: "NOX FILL" },
+                { key: "switch2", label: "NOX VENT" },
+                { key: "switch3", label: "NOX RELIEF" },
+                { key: "switch4", label: "N2 FILL" },
+                { key: "switch5", label: "N2 VENT" },
+                { key: "switch6", label: "CONTINUITY" },
               ].map(({ key, label }) => (
                 <div
                   key={key}
                   className={`flex flex-col p-3 rounded-lg border transition-all duration-300 justify-center items-center space-y-2 ${
                     switchStates[key as keyof typeof switchStates]
-                      ? 'bg-green-100 dark:bg-green-900/30 border-green-500/50'
-                      : 'bg-red-100 dark:bg-red-900/30 border-red-500/50'
+                      ? "bg-green-100 dark:bg-green-900/30 border-green-500/50"
+                      : "bg-red-100 dark:bg-red-900/30 border-red-500/50"
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <p className="text-xs font-semibold text-gray-900 dark:text-white">{label}</p>
-                    <div className={`w-2.5 h-2.5 rounded-full ${
-                      switchStates[key as keyof typeof switchStates] ? 'bg-green-500' : 'bg-red-500'
-                    }`}></div>
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                      {label}
+                    </p>
+                    <div
+                      className={`w-2.5 h-2.5 rounded-full ${
+                        switchStates[key as keyof typeof switchStates]
+                          ? "bg-green-500"
+                          : "bg-red-500"
+                      }`}
+                    ></div>
                   </div>
                   <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
-                    {switchStates[key as keyof typeof switchStates] ? 'ACTIVE' : 'INACTIVE'}
+                    {switchStates[key as keyof typeof switchStates]
+                      ? "ACTIVE"
+                      : "INACTIVE"}
                   </p>
                 </div>
               ))}
@@ -439,29 +388,33 @@ export default function LiquidUI({ telemetryData, connectionStatus, startTime, s
               <div
                 className={`flex flex-col p-3 rounded-lg border transition-all duration-300 justify-center items-center space-y-2 ${
                   switchStates.launchKey
-                    ? 'bg-green-100 dark:bg-green-900/30 border-green-500/50'
-                    : 'bg-red-100 dark:bg-red-900/30 border-red-500/50'
+                    ? "bg-green-100 dark:bg-green-900/30 border-green-500/50"
+                    : "bg-red-100 dark:bg-red-900/30 border-red-500/50"
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <p className="text-xs font-semibold text-gray-900 dark:text-white">LAUNCH KEY</p>
-                  <div className={`w-2.5 h-2.5 rounded-full ${
-                    switchStates.launchKey ? 'bg-green-500' : 'bg-red-500'
-                  }`}></div>
+                  <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                    LAUNCH KEY
+                  </p>
+                  <div
+                    className={`w-2.5 h-2.5 rounded-full ${
+                      switchStates.launchKey ? "bg-green-500" : "bg-red-500"
+                    }`}
+                  ></div>
                 </div>
                 <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
-                  {switchStates.launchKey ? 'ACTIVE' : 'INACTIVE'}
+                  {switchStates.launchKey ? "ACTIVE" : "INACTIVE"}
                 </p>
               </div>
-              <div
-                className="flex flex-col p-3 rounded-lg border transition-all duration-300 bg-red-100 dark:bg-red-900/30 border-red-500/50 justify-center items-center space-y-2"
-              >
+              <div className="flex flex-col p-3 rounded-lg border transition-all duration-300 bg-red-100 dark:bg-red-900/30 border-red-500/50 justify-center items-center space-y-2">
                 <div className="flex items-center gap-2">
-                  <p className="text-xs font-semibold text-gray-900 dark:text-white">ABORT</p>
+                  <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                    ABORT
+                  </p>
                   <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
                 </div>
                 <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
-                  {switchStates.abort ? 'ENGAGED' : 'STANDBY'}
+                  {switchStates.abort ? "ENGAGED" : "STANDBY"}
                 </p>
               </div>
             </div>
