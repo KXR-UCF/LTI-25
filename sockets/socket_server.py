@@ -122,7 +122,7 @@ with Sender.from_conf(conf) as sender:
 
             try:
 
-                # update sate file
+                # update controls database
                 switch = None
                 switch_open = None
                 if msg[0].isdigit():
@@ -153,7 +153,7 @@ with Sender.from_conf(conf) as sender:
                 sender.row(
                     'telemetry_data',
                     columns = {
-                        switch: switch_state
+                        switch: switch_states[switch] for switch in switch_states
                     },
                     at=datetime.now()
                 )
