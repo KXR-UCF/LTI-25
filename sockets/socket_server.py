@@ -151,7 +151,7 @@ with Sender.from_conf(conf) as sender:
                 # send data and time to questDB
                 switch_states[switch] = switch_state
                 sender.row(
-                    'telemetry_data',
+                    'controls_data',
                     columns = {
                         switch: switch_states[switch] for switch in switch_states
                     },
