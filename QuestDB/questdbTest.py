@@ -49,18 +49,18 @@ try:
         # st = time.time()
         print("Connected to QuestDB")
 
-        enable_fire = False
-        while not enable_fire:
-            # read state file
-            try:
-                with open(SWITCH_STATE_FILENAME, 'r') as f:
-                    switch_states = json.load(f)
-                # check enable fire state
-                if "enable_fire" in switch_states.keys():
-                    enable_fire = switch_states["enable_fire"]
-                time.sleep(0.05)
-            except FileNotFoundError:
-                print("Waiting for switch state file")
+        # enable_fire = False
+        # while not enable_fire:
+        #     # read state file
+        #     try:
+        #         with open(SWITCH_STATE_FILENAME, 'r') as f:
+        #             switch_states = json.load(f)
+        #         # check enable fire state
+        #         if "enable_fire" in switch_states.keys():
+        #             enable_fire = switch_states["enable_fire"]
+        #         time.sleep(0.05)
+        #     except FileNotFoundError:
+        #         print("Waiting for switch state file")
 
         print("Sending Data")
         st = time.time()
@@ -82,8 +82,8 @@ try:
                 at=datetime.now()
             )
             #
-            if time.time() - st >= 7:
-                break
+            # if time.time() - st >= 7:
+            #     break
 
                 # print('sent')
 
