@@ -46,15 +46,15 @@ In the home directory of the kxr user, there is a folder ```/home/kxr/LTI25```. 
 To start the code in that version:  
 
 1. Start QuestDB  
-    ```$ sudo /home/kxr/LTI25/startQuestDB.sh```  
+    ```$ sudo /home/kxr/LTI25/Wanda/QuestdbScripts/startQuestDB.sh```  
 
 2. Start the socket server  
-    ```$ python3 /home/kxr/LTI25/socket_server.py```
+    ```$ python3 /home/kxr/LTI25/Wanda/QuestdbScripts/socket_server.py```
 
 3. Wait for socket client to connect
 
 4. Start questdbTest.py  
-    ```$ python3 /home/kxr/LTI25/questdbTest.py```
+    ```$ python3 /home/kxr/LTI25/Wanda/QuestdbScripts/questdbTest.py```
 
 5. Wait for print statement **"connected to questdb"** from questdbTest.py
 
