@@ -5,11 +5,11 @@ PIs:
     ip: 192.168.1.7
   2:
     enabled: false
-    controller: true
+    controller: false
     ip: null
   3:
     enabled: false
-    controller: true
+    controller: false
     ip: null
 
 COSMO:

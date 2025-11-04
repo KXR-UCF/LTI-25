@@ -83,6 +83,7 @@ switch_states = {}
 with Sender.from_conf(conf) as sender:
     try:
         while True:
+            success = False
             # Receive data from COSMO (up to 1024 bytes at a time)
             msg = COSMO_socket.recv(1024)
 
@@ -97,7 +98,7 @@ with Sender.from_conf(conf) as sender:
 
             try:
 
-                # check if command is switch
+                # decode command
                 if msg[0].isdigit():
                     switch_info = msg.split(' ')
 
@@ -122,10 +123,11 @@ with Sender.from_conf(conf) as sender:
                 else:
                     raise ValueError(f"Unexpected Command")
                 
+
+                # get config info based on command
                 pi_id = config["switches"][str(switch_id)]["Pi"]
                 relay = config["switches"][str(switch_id)]["Relay"]
 
-                switch_states[switch_id] = state_open
 
                 if not config["PIs"][pi_id]["controller"]:
                     # send to worker pi
@@ -138,10 +140,15 @@ with Sender.from_conf(conf) as sender:
                         GPIO.output(RELAY_PINS[relay-1], GPIO.HIGH)
                     else:
                         GPIO.output(RELAY_PINS[relay-1], GPIO.LOW)
+                    success = True
                 
+                if success:
+                    switch_states[switch_id] = state_open
+
             except ValueError as e:
                 print(f"{e} \n\n CMD: <{msg}>")
 
+            if success:
                 sender.row(
                     'controls_data',
                     columns = {
@@ -150,11 +157,10 @@ with Sender.from_conf(conf) as sender:
                     at=datetime.now()
                 )
 
-            except ValueError as e:
-                print(f"{e} \n\n CMD: <{msg}>")
-
             # respond to COSMO
-            COSMO_socket.send(f"ACK: {msg}".encode())
+                COSMO_socket.send(f"ACK: {msg}".encode())
+            else:
+                print(f"unsuccessful: <{msg}>")
 
     except KeyboardInterrupt:
         print("Server interrupted by user.")
