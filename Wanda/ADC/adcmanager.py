@@ -3,7 +3,7 @@
 
 """KXR file for handling sensors/transducers connected to the KXR ADS1256 Pi hat"""
 
-import ADS1256
+from ADC import ADS1256
 import numpy as np
 import yaml
 import os
