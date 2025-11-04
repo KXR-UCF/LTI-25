@@ -1,6 +1,6 @@
 import RPi.GPIO as GPIO
-from time import sleep
 import yaml
+import time
 
 from questdb.ingress import Sender, Protocol
 from datetime import datetime
@@ -134,6 +134,25 @@ with Sender.from_conf(conf) as sender:
                     # TODO: wait for ACK from worker pi
                     pi_socket = worker_pi_sockets[pi_id]
                     pi_socket.send(f"R{relay} {state_open}".encode())
+
+                    # check for response
+                    response_ack = False
+                    while not response_ack:
+                        # if no response within a second, retry send message
+                        if time.time() - send_time >= 0.2:
+                            pi_socket.send(f"{relay} {state_open}".encode())
+                            send_time = time.time()
+                            attempts += 1
+
+                        # if no response after 5 attempts give up
+                        if attempts > 5:
+                            print(f"No response | msg:<{msg}>")
+                            break
+                        # check for response
+                        response_msg = pi_socket.recv(1024).decode().strip()
+                        response_ack = (response_msg == f"ACK: {msg.decode().strip()}")
+                    
+                    success = response_ack
 
                 elif config["PIs"][pi_id]["controller"]:
                     if state_open:
