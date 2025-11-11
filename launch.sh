@@ -10,6 +10,8 @@ cleanup()
     exit 0
 }
 
+cd cosmo
+
 # Start backend websocket server
 echo "Starting backend..."
 cd ground_station/backend/
