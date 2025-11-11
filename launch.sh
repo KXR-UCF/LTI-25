@@ -13,17 +13,15 @@ cleanup()
     exit 0
 }
 
-cd cosmo
-
 # Start command client
 echo "Starting command client..."
-cd ../../..
-cd command_client/
+cd cosmo/command_client
 python socket_client.py &
 cmd_pid=$!
 
 # Start backend websocket server
 echo "Starting backend..."
+cd ..
 cd ground_station/backend/
 npm start &
 back_pid=$!
