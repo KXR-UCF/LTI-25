@@ -1,5 +1,8 @@
 #!/bin/bash
 # Automates start of cosmo
+# To run:
+# Give script command priviledges: chmod +x launch.sh
+# Run script: ./launch.sh
 
 # Kills all program
 cleanup()
