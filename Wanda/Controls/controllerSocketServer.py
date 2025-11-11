@@ -142,8 +142,16 @@ with Sender.from_conf(conf) as sender:
                 
 
                 # get config info based on command
-                pi_id = int(config["switches"][switch_id]["Pi"])
-                relay = int(config["switches"][switch_id]["Relay"])
+                # if switch_id.isnumeric()
+
+                pi_id = config["switches"][switch_id]["Pi"]
+                relay = config["switches"][switch_id]["Relay"]
+
+                if pi_id == None or relay == None:
+                    raise ValueError("Switch not mapped")
+                
+                pi_id = int(pi_id)
+                relay = int(relay)
 
 
                 if not config["PIs"][pi_id]["controller"]:
@@ -189,16 +197,15 @@ with Sender.from_conf(conf) as sender:
                         GPIO.output(RELAY_PINS[relay-1], GPIO.LOW)
                     success = True
                 
+
                 if success:
                     switch_states[switch_id] = state_open
 
+
             except ValueError as e:
                 print(f"{e} \n\n CMD: <{msg}>")
-
-            # for switch in switch_states:
-            #     print(switch)
-            #     print(switch_states[switch]) 
-
+                continue
+            
             if success:
                 sender.row(
                     'controls_data',
@@ -211,7 +218,13 @@ with Sender.from_conf(conf) as sender:
             # respond to COSMO
                 COSMO_socket.send(f"ACK: {msg}".encode())
             else:
+                COSMO_socket.send(f"ERR: {msg}".encode())
                 print(f"unsuccessful: <{msg}>")
+
+            # for switch in switch_states:
+            #     print(switch)
+            #     print(switch_states[switch]) 
+
 
     except KeyboardInterrupt:
         print("Server interrupted by user.")
