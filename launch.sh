@@ -8,7 +8,7 @@
 cleanup()
 {
     echo "Stopping system..."
-    kill -9 cmd_pid back_pid front_pid 2>/dev/null
+    kill -9 $cmd_pid $back_pid $front_pid 2>/dev/null
     exit 0
 }
 
