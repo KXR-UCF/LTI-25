@@ -8,7 +8,7 @@
 cleanup()
 {
     echo "Stopping system..."
-    kill back_pid front_pid cmd_pid 2>/dev/null
+    kill cmd_pid back_pid front_pid 2>/dev/null
     wait
     exit 0
 }
@@ -16,7 +16,7 @@ cleanup()
 # Start command client
 echo "Starting command client..."
 cd cosmo/command_client
-python socket_client.py &
+python3 socket_client.py &
 cmd_pid=$!
 
 # Start backend websocket server
@@ -33,5 +33,6 @@ cd new_frontend/my-app/
 npm run dev &
 front_pid=$!
 
-echo "Cosmo is running - Press Ctrl+C to stop"
 trap cleanup SIGINT SIGTERM
+echo "Cosmo is running - Press Ctrl+C to stop"
+wait
