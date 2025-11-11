@@ -15,6 +15,13 @@ cleanup()
 
 cd cosmo
 
+# Start command client
+echo "Starting command client..."
+cd ../../..
+cd command_client/
+python socket_client.py &
+cmd_pid=$!
+
 # Start backend websocket server
 echo "Starting backend..."
 cd ground_station/backend/
@@ -27,13 +34,6 @@ cd ..
 cd new_frontend/my-app/
 npm run dev &
 front_pid=$!
-
-# Start command client
-echo "Starting command client..."
-cd ../../..
-cd command_client/
-python socket_client.py &
-cmd_pid=$!
 
 echo "Cosmo is running - Press Ctrl+C to stop"
 trap cleanup SIGINT SIGTERM
