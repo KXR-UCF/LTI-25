@@ -11,7 +11,7 @@ for pin in RELAY_PINS:
 controller_pi_address = "192.168.1.30"
 
 controller_pi_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-controller_pi_socket.connect(controller_pi_address, 9600)
+controller_pi_socket.connect((controller_pi_address, 9600))
 
 try:
     while True:
