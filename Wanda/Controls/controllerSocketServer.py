@@ -80,20 +80,73 @@ while num_connected_pis < num_enabled_pis-1 or not COSMO_connected:
     client_socket, client_address = server_socket.accept()
     print(f"Connection established with {client_address}")
 
-    if str(config["COSMO"]["ip"]) == str(client_address[0]):
+    if client_address[0] == config["COSMO"]["ip"]:
         COSMO_socket = client_socket
         COSMO_address = COSMO_address
         COSMO_connected = True
+        print("COSMO Connection Established")
 
     for pi_id in config["PIs"]:
         pi_id = pi_id
-        if client_address == config["PIs"][pi_id]["ip"]:
+        if client_address[0] == config["PIs"][pi_id]["ip"]:
             client_socket.settimeout(0.1)
             worker_pi = WorkerPi(pi_id, client_address, client_socket)
             worker_pis.append(worker_pi)
             num_connected_pis += 1
+            print(f"Pi {pi_id} Connection Established")
 
 switch_states = {}
+
+
+def decode_cmd(cmd: str):
+    # decode command
+    if cmd[0].isdigit():
+        cmd_lower = msg.lower()
+        switch_info = cmd_lower.split(' ')
+
+        if not switch_info[0].isnumeric():
+            raise ValueError(f"Switch id <{switch_info[0]}> not numeric")
+        
+        switch_id = int(switch_info[0])
+
+        if switch_info[1] == "open" or switch_info[1] == "close":
+            state_open = (switch_info[1] == "Open")
+        else:
+            raise ValueError(f"{switch_id} not open or closed")
+        
+    elif cmd_lower == "enable fire" or cmd_lower == "disable fire":
+        switch_id = "ENABLE FIRE"
+        state_open = (cmd_lower == "ENABLE FIRE")
+
+    elif cmd_lower == "fire":
+        switch_id = "FIRE"
+        state_open = True
+
+    elif cmd_lower == "abort open" or cmd_lower == "abort close":
+        abort = (msg.lower() == "abort open")
+        state_open = False
+
+    else:
+        raise ValueError(f"Unexpected Command")
+    
+    return switch_id, state_open
+    
+
+def get_affected_relays(switch_id, state_open):
+    relays_changed = []
+    for pi_id in config["PIs"]:
+        pi = config["PIs"][pi_id]
+
+        for relay_id in pi["relays"]:
+            relay = pi["relays"][relay_id]
+
+            if relay["switch"] == switch_id or abort:
+                # NOTE: all relays controlled by this switch would be set to the same state
+                relays_changed.append({"pi":pi_id, "relay":relay_id, "state":state_open})
+
+    return relays_changed
+
+
 
 with Sender.from_conf(conf) as sender:
     print("Connected to Questdb")
@@ -111,121 +164,82 @@ with Sender.from_conf(conf) as sender:
 
             # Decode the received data
             msg = msg.decode().strip()
+            cmds = msg.split(';')
+
             print(f"Received data: {msg}")
 
-            try:
+            for cmd in cmds:    
+                try:
+                    switch_id, state_open = decode_cmd(cmd)
+                    relays_changed = get_affected_relays(switch_id, state_open)
 
-                # decode command
-                if msg[0].isdigit():
-                    switch_info = msg.split(' ')
+                    for relay_data in relays_changed:
+                        pi_id = relay_data["pi"]
+                        relay = relay_data["relay"]
+                        relay_open = relay_data["state"]
+                        if pi_id == "contoller":
+                            if relay_open:
+                                GPIO.output(RELAY_PINS[relay-1], GPIO.HIGH)
+                            else:
+                                GPIO.output(RELAY_PINS[relay-1], GPIO.LOW)
+                            print(f"This Pi {relay} {relay_open}")
+                            success = True
 
-                    if not switch_info[0].isnumeric():
-                        raise ValueError(f"Switch id <{switch_info[0]}> not numeric")
-                    
-                    switch_id = int(switch_info[0])
-
-                    if switch_info[1] == "Open" or switch_info[1] == "Close":
-                        state_open = (switch_info[1] == "Open")
-                    else:
-                        raise ValueError(f"{switch_id} not open or closed")
-                    
-                elif msg == "ENABLE FIRE" or msg == "DISABLE FIRE":
-                    switch_id = "ENABLE FIRE"
-                    state_open = (msg == "ENABLE FIRE")
-
-                elif msg == "FIRE":
-                    switch_id = "FIRE"
-                    state_open = True
-
-                elif msg.lower() == "abort open" or msg.lower() == "abort close":
-                    abort = (msg.lower() == "abort open")
-                    state_open = False
-
-                else:
-                    raise ValueError(f"Unexpected Command")
-                
-                relays_changed = []
-                for pi_id in config["PIs"]:
-                    pi = config["PIs"][pi_id]
-
-                    for relay_id in pi["relays"]:
-                        relay = pi["relays"][relay_id]
-
-                        if relay["switch"] == switch_id or abort:
-                            # NOTE: all relays controlled by this switch would be set to the same state
-                            relays_changed.append({"pi":pi_id, "relay":relay_id, "state":state_open})
-
-
-                for relay_data in relays_changed:
-                    pi_id = relay_data["pi"]
-                    relay = relay_data["relay"]
-                    relay_open = relay_data["state"]
-                    if pi_id == "contoller":
-                        if relay_open:
-                            GPIO.output(RELAY_PINS[relay-1], GPIO.HIGH)
                         else:
-                            GPIO.output(RELAY_PINS[relay-1], GPIO.LOW)
-                        success = True
+                            worker_pi_socket = None
+                            for worker_pi in worker_pis:
+                                if str(pi_id) == str(worker_pi.id):
+                                    worker_pi_socket = worker_pi.client_socket
+                            if worker_pi_socket == None:
+                                print("no socket")
+                                raise ValueError("No socket server retrieved")
+                            else:
 
-                    else:
-                        worker_pi_socket = None
-                        for worker_pi in worker_pis:
-                            if str(pi_id) == str(worker_pi.id):
-                                worker_pi_socket = worker_pi.client_socket
-                        if worker_pi_socket == None:
-                            print("no socket")
-                            raise ValueError("No socket server retrieved")
-                        else:
-
-                            # check for response
-                            response_ack = False
-                            response_err = False
-                            attempts = 0
-                            while not (response_ack or response_err):
-                                # if no response within a second, retry send message
-                                worker_pi_socket.send(f"R{relay} {relay_open}".encode())
-                                attempts += 1
-
-                                # if no response after 5 attempts give up
-                                if attempts > 5:
-                                    print(f"No response | msg:<{msg}>")
-                                    break
                                 # check for response
-                                try:
-                                    response_msg = worker_pi_socket.recv(1024).decode().strip()
-                                    response_ack = (response_msg == f"ACK: {msg.decode().strip()}")
-                                    response_err = (response_msg == f"ERR: {msg.decode().strip()}")
-                                except socket.timeout:
-                                    print("Socket Timeout")
-                            
-                            success = response_ack
+                                response_ack = False
+                                response_err = False
+                                attempts = 0
+                                while not (response_ack or response_err):
+                                    # if no response within a second, retry send message
+                                    worker_pi_msg = f"{relay} {relay_open}"
+                                    worker_pi_socket.send(worker_pi_msg.encode())
+                                    attempts += 1
 
-                if success:
-                    switch_states[switch_id] = state_open
+                                    # if no response after 5 attempts give up
+                                    if attempts > 5:
+                                        print(f"No response | msg:<{worker_pi_msg}>")
+                                        break
+                                    # check for response
+                                    try:
+                                        response_msg = worker_pi_socket.recv(1024).decode().strip()
+                                        response_ack = (response_msg == f"ACK: {worker_pi_msg.strip()}")
+                                        response_err = (response_msg == f"ERR: {worker_pi_msg.strip()}")
+                                    except socket.timeout:
+                                        print("Socket Timeout")
+                                
+                                success = response_ack
 
+                    if success:
+                        switch_states[switch_id] = state_open
 
-            except ValueError as e:
-                print(f"{e} \n\n CMD: <{msg}>")
-                continue
-            
-            if success:
-                sender.row(
-                    'controls_data',
-                    columns = {
-                        str(switch): switch_states[switch] for switch in switch_states
-                    },
-                    at=datetime.now()
-                )
+                        sender.row(
+                            'controls_data',
+                            columns = {
+                                str(switch): switch_states[switch] for switch in switch_states
+                            },
+                            at=datetime.now()
+                        )
 
-            # respond to COSMO
-                COSMO_socket.send(f"ACK: {msg}".encode())
-            else:
-                COSMO_socket.send(f"ERR: {msg}".encode())
-                print(f"unsuccessful: <{msg}>")
+                        # respond to COSMO
+                        COSMO_socket.send(f"ACK: {cmd}".encode())
+                    else:
+                        COSMO_socket.send(f"ERR: {cmd}".encode())
+                        print(f"unsuccessful: <{cmd}>")
 
-            # for switch in switch_states:
-            #     print(switch)
-            #     print(switch_states[switch]) 
+                except ValueError as e:
+                    print(f"{e} \n\n CMD: <{cmd}>")
+                    COSMO_socket.send(f"ERR: {cmd}".encode())
+                    continue
 
 
     except KeyboardInterrupt:

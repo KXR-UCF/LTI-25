@@ -136,7 +136,8 @@ s.settimeout(0.1)
 try:
     while True:
         # receive data from the server and decoding to get the string.
-        msg = ser.readline().decode().strip().encode()
+        msg_str = ser.readline().decode().strip()
+        msg = f"{msg_str};".encode()
 
         if len(msg) == 0:
             continue
