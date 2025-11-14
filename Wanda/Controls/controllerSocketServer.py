@@ -8,6 +8,15 @@ from datetime import datetime
 import socket
 import os
 
+class WorkerPi:
+
+    def __init__(self, id: int, client_ip_address, client_socket: socket):
+        self.id = id
+        self.client_ip_address = client_ip_address
+        self.client_socket = client_socket
+
+
+
 conf = (
     'http::addr=localhost:9000;'
     'username=admin;'
@@ -213,6 +222,11 @@ with Sender.from_conf(conf) as sender:
             else:
                 COSMO_socket.send(f"ERR: {msg}".encode())
                 print(f"unsuccessful: <{msg}>")
+
+            # for switch in switch_states:
+            #     print(switch)
+            #     print(switch_states[switch]) 
+
 
     except KeyboardInterrupt:
         print("Server interrupted by user.")
