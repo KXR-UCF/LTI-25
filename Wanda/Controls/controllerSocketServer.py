@@ -169,7 +169,8 @@ with Sender.from_conf(conf) as sender:
 
             print(f"Received data: {msg}")
 
-            for cmd in cmds:    
+            for cmd in cmds:
+                print(f'CMD: <{cmd}>') 
                 success = False
                 try:
                     switch_id, state_open = decode_cmd(cmd)
@@ -184,7 +185,7 @@ with Sender.from_conf(conf) as sender:
                                 GPIO.output(RELAY_PINS[relay-1], GPIO.HIGH)
                             else:
                                 GPIO.output(RELAY_PINS[relay-1], GPIO.LOW)
-                            print(f"This Pi {relay} {relay_open}")
+                            print(f"Controller: Relay:{relay} State:{relay_open}")
                             success = True
 
                         else:
@@ -202,6 +203,7 @@ with Sender.from_conf(conf) as sender:
                                 response_err = False
                                 attempts = 0
                                 while not (response_ack or response_err):
+                                    print("-"*10)
                                     # if no response within a second, retry send message
                                     worker_pi_msg = f"{relay} {relay_open}"
                                     worker_pi_socket.send(f"{worker_pi_msg};".encode())
@@ -246,6 +248,7 @@ with Sender.from_conf(conf) as sender:
                     else:
                         COSMO_socket.send(f"ERR: {cmd};".encode())
                         print(f"unsuccessful: <{cmd}>")
+                    print("="*15)
 
                 except ValueError as e:
                     print(f"{e} \n\n CMD: <{cmd}>")
