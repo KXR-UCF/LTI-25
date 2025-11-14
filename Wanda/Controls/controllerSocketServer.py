@@ -137,6 +137,9 @@ def get_affected_relays(switch_id, state_open):
     for pi_id in config["PIs"]:
         pi = config["PIs"][pi_id]
 
+        if not pi["enabled"]:
+            continue
+
         for relay_id in pi["relays"]:
             relay = pi["relays"][relay_id]
 
