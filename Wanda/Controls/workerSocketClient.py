@@ -42,10 +42,10 @@ try:
                 success = True
 
             if success:
-                print(f"Sending ACK")
+                print(f"Sending ACK\n")
                 controller_pi_socket.send(f"ACK: {msg}".encode())
             else:
-                print(f"Sending ERR")
+                print(f"Sending ERR\n")
                 controller_pi_socket.send(f"ERR: {msg}".encode())
 
 except KeyboardInterrupt:

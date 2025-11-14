@@ -10,12 +10,10 @@ import os
 
 class WorkerPi:
 
-    def __init__(self, id: int, client_ip_address, client_socket: socket):
+    def __init__(self, id, client_ip_address, client_socket: socket):
         self.id = id
         self.client_ip_address = client_ip_address
         self.client_socket = client_socket
-
-
 
 conf = (
     'http::addr=localhost:9000;'
@@ -99,6 +97,9 @@ switch_states = {}
 abort = False
 
 def decode_cmd(cmd: str):
+    if len(cmd) == 0:
+        raise ValueError(f"Empty CMD: <{cmd}>")
+
     # decode command
     cmd_lower = cmd.lower()
     if cmd[0].isdigit():
@@ -164,7 +165,7 @@ with Sender.from_conf(conf) as sender:
 
             # Decode the received data
             msg = msg.decode().strip()
-            cmds = msg.split(';')
+            cmds = msg.rstrip(';').split(';')
 
             print(f"Received data: {msg}")
 
@@ -202,7 +203,7 @@ with Sender.from_conf(conf) as sender:
                                 attempts = 0
                                 while not (response_ack or response_err):
                                     # if no response within a second, retry send message
-                                    worker_pi_msg = f"{relay} {relay_open};"
+                                    worker_pi_msg = f"{relay} {relay_open}"
                                     worker_pi_socket.send(f"{worker_pi_msg};".encode())
                                     print(f"Sent to Pi<{pi_id}>: <{worker_pi_msg}>")
                                     attempts += 1
