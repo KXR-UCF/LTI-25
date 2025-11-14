@@ -4,7 +4,7 @@ import time
 import os
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect(("192.168.1.7", 9600))
+s.connect(("192.168.1.30", 9600))
 ser = serial.Serial("/dev/ttyACM0", 9600)
 
 # Create named pipe for sharing switch states with server.js
@@ -131,6 +131,8 @@ if pipe:
     # Resend current states on initial connection
     pipe = resend_all_states(pipe)
 
+# set socket timeout
+s.settimeout(0.1)
 try:
     while True:
         # receive data from the server and decoding to get the string.
@@ -139,27 +141,33 @@ try:
         if len(msg) == 0:
             continue
 
-        s.send(msg)
-        send_time = time.time()
-        attempts = 1
-
-        # check for response
+        # send until error or ack repsonse
         response_ack = False
-        while not response_ack:
-            # if no response within a second, retry send message
-            if time.time() - send_time >= 1:
-                s.send(msg)
-                send_time = time.time()
-                attempts += 1
+        response_err = False
+        attempts = 0
+        while (not response_ack) and (not response_err):
 
             # if no response after 5 attempts give up
             if attempts > 5:
-                print(f"No response | msg:<{msg}>")
+                print(f"No responses: <{msg}>")
                 break
+
+            s.send(msg)
+            print(f"Sent: <{msg.decode()}>")
+            attempts += 1
+
             # check for response
-            response_msg = s.recv(1024)
-            response_msg = response_msg.decode().strip()
-            response_ack = (response_msg == f"ACK: {msg.decode().strip()}")
+            try:
+                response_msg = s.recv(1024)
+                response_msg = response_msg.decode().strip()
+                response_ack = (response_msg == f"ACK: {msg.decode().strip()}")
+                response_err = (response_msg == f"ERR: {msg.decode().strip()}")
+            except socket.timeout:
+                print("No ACK")
+
+        # error check
+        if response_err:
+            print(f"ERROR: {response_msg}")
 
         # do something after a successful response
         if response_ack:
