@@ -77,10 +77,10 @@ while num_connected_pis < num_enabled_pis-1 or not COSMO_connected:
         COSMO_connected = True
 
     for pi_id in config["PIs"]:
-        pi_id = int(pi_id)
+        pi_id = pi_id
         if client_address == config["PIs"][pi_id]["ip"]:
             client_socket.settimeout(0.1)
-            worker_pi = WorkerPi(int(pi_id), client_address, client_socket)
+            worker_pi = WorkerPi(pi_id, client_address, client_socket)
             worker_pis.append(worker_pi)
             num_connected_pis += 1
 
@@ -91,6 +91,7 @@ with Sender.from_conf(conf) as sender:
     try:
         while True:
             success = False
+            abort = False
             # Receive data from COSMO (up to 1024 bytes at a time)
             msg = COSMO_socket.recv(1024)
 
