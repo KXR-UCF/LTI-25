@@ -92,6 +92,7 @@ while num_connected_pis < num_enabled_pis-1 or not COSMO_connected:
             worker_pis.append(worker_pi)
             num_connected_pis += 1
             print(f"Pi {pi_id} Connection Established")
+print("ALL CONNECTIONs ESTABLISHED")
 
 switch_states = {}
 abort = False
@@ -153,6 +154,7 @@ def get_affected_relays(switch_id, state_open):
 
 with Sender.from_conf(conf) as sender:
     print("Connected to Questdb")
+    print(f"{'='*50}\n\n")
     try:
         while True:
             # Receive data from COSMO (up to 1024 bytes at a time)
@@ -204,6 +206,15 @@ with Sender.from_conf(conf) as sender:
                                 attempts = 0
                                 while not (response_ack or response_err):
                                     print("-"*10)
+
+                                    # clear socket buffer
+                                    worker_pi_socket.setblocking(False)
+                                    try:
+                                        worker_pi_socket.recv(1024)
+                                    except BlockingIOError:
+                                        pass
+                                    worker_pi_socket.setblocking(True)
+
                                     # if no response within a second, retry send message
                                     worker_pi_msg = f"{relay} {relay_open}"
                                     worker_pi_socket.send(f"{worker_pi_msg};".encode())
@@ -244,13 +255,15 @@ with Sender.from_conf(conf) as sender:
                         )
 
                         # respond to COSMO
+                        print("Sending ACK")
                         COSMO_socket.send(f"ACK: {cmd};".encode())
                     else:
+                        print(f"Sending ERR")
                         COSMO_socket.send(f"ERR: {cmd};".encode())
-                        print(f"unsuccessful: <{cmd}>")
-                    print("="*15)
+                    print("="*30)
 
                 except ValueError as e:
+                    print('ERR')
                     print(f"{e} \n\n CMD: <{cmd}>")
                     COSMO_socket.send(f"ERR: {cmd};".encode())
                     continue
