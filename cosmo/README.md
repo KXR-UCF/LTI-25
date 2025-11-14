@@ -55,38 +55,38 @@ CREATE TABLE telemetry_data (
 ### 4. Install Ground Station Dependencies
 ```bash
 # Backend
-cd ground-station/backend/
+cd ground_station/backend/
 npm install
 
 # Frontend
-cd ground-station/new_frontend/my-app/
+cd ground_station/new_frontend/my-app/
 npm install
 npm install uplot uplot-react
 ```
 
 ## Running COSMO
 
-**Terminal 1 - Backend WebSocket Server:**
+**Terminal 1 - Command Client:**
 ```bash
-cd ground-station/backend/
+cd command_client/
+python socket_client.py
+```
+
+**Terminal 2 - Backend WebSocket Server:**
+```bash
+cd ground_station/backend/
 npm start
 ```
 - Server runs on port 8080
 - Polls database at 60Hz and broadcasts to clients
 
-**Terminal 2 - Frontend Interface:**
+**Terminal 3 - Frontend Interface:**
 ```bash
-cd ground-station/new_frontend/my-app/
+cd ground_station/new_frontend/my-app/
 npm run dev
 ```
 - Interface available at http://localhost:3000
 - Connects to WebSocket server automatically
-
-**Terminal 3 - Command Client:**
-```bash
-cd command-client/
-python socket_client.py
-```
 
 ## Shutting Down
 
