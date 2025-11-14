@@ -100,8 +100,8 @@ abort = False
 
 def decode_cmd(cmd: str):
     # decode command
+    cmd_lower = cmd.lower()
     if cmd[0].isdigit():
-        cmd_lower = msg.lower()
         switch_info = cmd_lower.split(' ')
 
         if not switch_info[0].isnumeric():
