@@ -89,14 +89,14 @@ while num_connected_pis < num_enabled_pis-1 or not COSMO_connected:
     for pi_id in config["PIs"]:
         pi_id = pi_id
         if client_address[0] == config["PIs"][pi_id]["ip"]:
-            client_socket.settimeout(0.1)
+            client_socket.settimeout(0.2)
             worker_pi = WorkerPi(pi_id, client_address, client_socket)
             worker_pis.append(worker_pi)
             num_connected_pis += 1
             print(f"Pi {pi_id} Connection Established")
 
 switch_states = {}
-
+abort = False
 
 def decode_cmd(cmd: str):
     # decode command
@@ -147,13 +147,10 @@ def get_affected_relays(switch_id, state_open):
     return relays_changed
 
 
-
 with Sender.from_conf(conf) as sender:
     print("Connected to Questdb")
     try:
         while True:
-            success = False
-            abort = False
             # Receive data from COSMO (up to 1024 bytes at a time)
             msg = COSMO_socket.recv(1024)
 
@@ -169,6 +166,7 @@ with Sender.from_conf(conf) as sender:
             print(f"Received data: {msg}")
 
             for cmd in cmds:    
+                success = False
                 try:
                     switch_id, state_open = decode_cmd(cmd)
                     relays_changed = get_affected_relays(switch_id, state_open)
@@ -201,8 +199,9 @@ with Sender.from_conf(conf) as sender:
                                 attempts = 0
                                 while not (response_ack or response_err):
                                     # if no response within a second, retry send message
-                                    worker_pi_msg = f"{relay} {relay_open}"
-                                    worker_pi_socket.send(worker_pi_msg.encode())
+                                    worker_pi_msg = f"{relay} {relay_open};"
+                                    worker_pi_socket.send(f"{worker_pi_msg};".encode())
+                                    print(f"Sent to Pi<{pi_id}>: <{worker_pi_msg}>")
                                     attempts += 1
 
                                     # if no response after 5 attempts give up
@@ -212,8 +211,16 @@ with Sender.from_conf(conf) as sender:
                                     # check for response
                                     try:
                                         response_msg = worker_pi_socket.recv(1024).decode().strip()
-                                        response_ack = (response_msg == f"ACK: {worker_pi_msg.strip()}")
-                                        response_err = (response_msg == f"ERR: {worker_pi_msg.strip()}")
+                                        responses = response_msg.rstrip(';').split(';')
+
+                                        for response in responses:
+                                            print(f"Recieved Response: <{response}>")
+                                            response_ack = (response == f"ACK: {worker_pi_msg.strip()}")
+                                            response_err = (response == f"ERR: {worker_pi_msg.strip()}")
+
+                                            if response_ack or response_err:
+                                                break
+
                                     except socket.timeout:
                                         print("Socket Timeout")
                                 
@@ -231,14 +238,14 @@ with Sender.from_conf(conf) as sender:
                         )
 
                         # respond to COSMO
-                        COSMO_socket.send(f"ACK: {cmd}".encode())
+                        COSMO_socket.send(f"ACK: {cmd};".encode())
                     else:
-                        COSMO_socket.send(f"ERR: {cmd}".encode())
+                        COSMO_socket.send(f"ERR: {cmd};".encode())
                         print(f"unsuccessful: <{cmd}>")
 
                 except ValueError as e:
                     print(f"{e} \n\n CMD: <{cmd}>")
-                    COSMO_socket.send(f"ERR: {cmd}".encode())
+                    COSMO_socket.send(f"ERR: {cmd};".encode())
                     continue
 
 
