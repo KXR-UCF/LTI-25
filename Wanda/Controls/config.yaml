@@ -31,10 +31,61 @@ PIs:
   1:
     enabled: false
     ip: null
+    relays:
+      1:
+        name: null
+        switch: null
+      2:
+        name: null
+        switch: null
+      3:
+        name: null
+        switch: null
+      4:
+        name: null
+        switch: null
+      5:
+        name: null
+        switch: null
+      6:
+        name: null
+        switch: null
+      7:
+        name: null
+        switch: null
+      8:
+        name: null
+        switch: null
 
   2:
     enabled: false
     ip: null
+    relays:
+      1:
+        name: null
+        switch: null
+      2:
+        name: null
+        switch: null
+      3:
+        name: null
+        switch: null
+      4:
+        name: null
+        switch: null
+      5:
+        name: null
+        switch: null
+      6:
+        name: null
+        switch: null
+      7:
+        name: null
+        switch: null
+      8:
+        name: null
+        switch: null
+    
 
 COSMO:
   ip: 192.168.1.6
