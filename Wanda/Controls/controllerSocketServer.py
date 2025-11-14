@@ -125,7 +125,8 @@ def decode_cmd(cmd: str):
         state_open = True
 
     elif cmd_lower == "abort open" or cmd_lower == "abort close":
-        abort = (msg.lower() == "abort open".lower())
+        global abort
+        abort = (cmd_lower == "abort open".lower())
         switch_id = 'ABORT'
         state_open = False
 
@@ -155,7 +156,7 @@ def get_affected_relays(switch_id, state_open):
 
 with Sender.from_conf(conf) as sender:
     print("Connected to Questdb")
-    print(f"{'='*50}\n\n")
+    print(f"{'='*50}")
     try:
         while True:
             # Receive data from COSMO (up to 1024 bytes at a time)
@@ -173,7 +174,7 @@ with Sender.from_conf(conf) as sender:
             # print(f"Received data: {msg}")
 
             for cmd in cmds:
-                print("="*30)
+                print("="*50)
                 print(f'CMD: <{cmd}>') 
                 success = False
                 try:
@@ -207,7 +208,7 @@ with Sender.from_conf(conf) as sender:
                                 response_err = False
                                 attempts = 0
                                 while not (response_ack or response_err):
-                                    print("-"*10)
+                                    print("-"*25)
 
                                     # clear socket buffer
                                     worker_pi_socket.setblocking(False)
