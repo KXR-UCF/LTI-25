@@ -112,20 +112,21 @@ def decode_cmd(cmd: str):
         switch_id = int(switch_info[0])
 
         if switch_info[1] == "open" or switch_info[1] == "close":
-            state_open = (switch_info[1] == "Open")
+            state_open = (switch_info[1] == "open".lower())
         else:
             raise ValueError(f"{switch_id} not open or closed")
         
     elif cmd_lower == "enable fire" or cmd_lower == "disable fire":
         switch_id = "ENABLE FIRE"
-        state_open = (cmd_lower == "ENABLE FIRE")
+        state_open = (cmd_lower == "enable fire".lower())
 
     elif cmd_lower == "fire":
         switch_id = "FIRE"
         state_open = True
 
     elif cmd_lower == "abort open" or cmd_lower == "abort close":
-        abort = (msg.lower() == "abort open")
+        abort = (msg.lower() == "abort open".lower())
+        switch_id = 'ABORT'
         state_open = False
 
     else:
@@ -169,9 +170,10 @@ with Sender.from_conf(conf) as sender:
             msg = msg.decode().strip()
             cmds = msg.rstrip(';').split(';')
 
-            print(f"Received data: {msg}")
+            # print(f"Received data: {msg}")
 
             for cmd in cmds:
+                print("="*30)
                 print(f'CMD: <{cmd}>') 
                 success = False
                 try:
@@ -260,7 +262,6 @@ with Sender.from_conf(conf) as sender:
                     else:
                         print(f"Sending ERR")
                         COSMO_socket.send(f"ERR: {cmd};".encode())
-                    print("="*30)
 
                 except ValueError as e:
                     print('ERR')
