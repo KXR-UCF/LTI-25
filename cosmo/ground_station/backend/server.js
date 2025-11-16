@@ -189,20 +189,11 @@ function parseSwitchMessage(msg) {
     };
   }
 
-  // "FIRE" - can be both triggered and reset
-  if (trimmed === 'FIRE') {
+  // "ABORT Open" / "ABORT Close"
+  if (trimmed === 'ABORT Open' || trimmed === 'ABORT Close') {
     return {
       switch: 'abort',
-      state: true,
-      message: trimmed
-    };
-  }
-
-  // "ABORT OFF" or "FIRE OFF" - reset abort state
-  if (trimmed === 'ABORT OFF' || trimmed === 'FIRE OFF') {
-    return {
-      switch: 'abort',
-      state: false,
+      state: trimmed === 'ABORT Open',
       message: trimmed
     };
   }
@@ -224,6 +215,33 @@ function broadcastSwitchState(switchState) {
   // Update current state in memory
   currentSwitchStates[switchState.switch] = switchState.state;
   console.log(`💾 Updated state: ${switchState.switch} = ${switchState.state}`);
+
+  // If abort is engaged, turn off all switches and launchKey
+  if (switchState.switch === 'abort' && switchState.state === true) {
+    console.log(`🚨 ABORT ENGAGED - Turning off all switches and launchKey`);
+
+    // Turn off all numbered switches (1-10)
+    const switchesToTurnOff = ['switch1', 'switch2', 'switch3', 'switch4', 'switch5',
+                                'switch6', 'switch7', 'switch8', 'switch9', 'switch10', 'launchKey'];
+
+    switchesToTurnOff.forEach(sw => {
+      currentSwitchStates[sw] = false;
+
+      // Broadcast each switch turning off
+      const offMessage = {
+        type: 'switch_state_update',
+        data: { switch: sw, state: false }
+      };
+
+      clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify(offMessage));
+        }
+      });
+
+      console.log(`  ↳ ${sw} = false`);
+    });
+  }
 
   const message = {
     type: 'switch_state_update',

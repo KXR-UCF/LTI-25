@@ -71,14 +71,9 @@ def parse_and_track_state(msg_str):
         current_switch_states['launchKey'] = (msg_str == 'ENABLE FIRE')
         return True
 
-    # "FIRE"
-    if msg_str == 'FIRE':
-        current_switch_states['abort'] = True
-        return True
-
-    # "ABORT OFF" / "FIRE OFF"
-    if msg_str == 'ABORT OFF' or msg_str == 'FIRE OFF':
-        current_switch_states['abort'] = False
+    # "ABORT Open" / "ABORT Close"
+    if msg_str == 'ABORT Open' or msg_str == 'ABORT Close':
+        current_switch_states['abort'] = (msg_str == 'ABORT Open')
         return True
 
     return False
@@ -122,14 +117,10 @@ def resend_all_states(pipe):
         print(f"  → {launch_msg}")
 
         # Send abort state
-        if current_switch_states['abort']:
-            pipe.write('FIRE\n')
-            pipe.flush()
-            print(f"  → FIRE")
-        else:
-            pipe.write('FIRE OFF\n')
-            pipe.flush()
-            print(f"  → FIRE OFF")
+        abort_msg = 'ABORT Open' if current_switch_states['abort'] else 'ABORT Close'
+        pipe.write(abort_msg + '\n')
+        pipe.flush()
+        print(f"  → {abort_msg}")
 
         print(f"✅ All states resent successfully")
     except Exception as e:
