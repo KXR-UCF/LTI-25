@@ -141,7 +141,7 @@ try:
     while True:
         # receive data from the server and decoding to get the string.
         msg = ser.readline().decode().strip()
-        msg_payload = f"{msg_str};".encode()
+        msg_payload = f"{msg};".encode()
 
         if len(msg) == 0:
             continue

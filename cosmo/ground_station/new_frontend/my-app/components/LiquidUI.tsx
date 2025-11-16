@@ -182,9 +182,9 @@ export default function LiquidUI({
 
         {/* Thermal Chart */}
         <Chart
-          name={"THERMAL COUPLE TELEMETRY"}
+          name={"THERMOCOUPLE TELEMETRY"}
           isDark={isDark}
-          chartClass={"thermal-couple-chart"}
+          chartClass={"thermocouple-chart"}
           axisLabel={"Celcius (C)"}
           axisUnit={" C"}
           lines={[
@@ -528,12 +528,18 @@ export default function LiquidUI({
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-3 mt-3">
-                <div className="flex flex-col p-3 rounded-lg border transition-all duration-300 bg-red-100 dark:bg-red-900/30 border-red-500/50 justify-center items-center space-y-2">
+                <div className={`flex flex-col p-3 rounded-lg border transition-all duration-300 justify-center items-center space-y-2 ${
+                  switchStates.abort
+                    ? "bg-red-100 dark:bg-red-900/30 border-red-500/50 animate-pulse"
+                    : "bg-gray-100 dark:bg-gray-800/50 border-gray-300 dark:border-gray-700"
+                }`}>
                   <div className="flex items-center gap-2">
                     <p className="text-xs font-semibold text-gray-900 dark:text-white">
                       ABORT SYSTEM
                     </p>
-                    <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                    <div className={`w-2.5 h-2.5 rounded-full ${
+                      switchStates.abort ? "bg-red-500" : "bg-gray-500"
+                    }`}></div>
                   </div>
                   <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
                     {switchStates.abort ? "ENGAGED" : "STANDBY"}

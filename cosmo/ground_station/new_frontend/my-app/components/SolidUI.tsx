@@ -394,11 +394,17 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
               </div>
             </div>
             <div
-              className="flex flex-col p-4 rounded-lg border transition-all duration-300 bg-red-100 dark:bg-red-900/30 border-red-500/50 justify-center items-center space-y-3 flex-1"
+              className={`flex flex-col p-4 rounded-lg border transition-all duration-300 justify-center items-center space-y-3 flex-1 ${
+                switchStates.abort
+                  ? 'bg-red-100 dark:bg-red-900/30 border-red-500/50 animate-pulse'
+                  : 'bg-gray-100 dark:bg-gray-800/50 border-gray-300 dark:border-gray-700'
+              }`}
             >
               <div className="flex items-center gap-2">
                 <p className="text-base font-semibold text-gray-900 dark:text-white">ABORT SYSTEM</p>
-                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <div className={`w-3 h-3 rounded-full ${
+                  switchStates.abort ? 'bg-red-500' : 'bg-gray-500'
+                }`}></div>
               </div>
               <p className="text-sm text-gray-600 dark:text-white/70 font-medium">
                 {switchStates.abort ? 'ENGAGED' : 'STANDBY'}
