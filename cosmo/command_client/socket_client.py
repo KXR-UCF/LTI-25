@@ -132,11 +132,12 @@ if pipe:
     pipe = resend_all_states(pipe)
 
 # set socket timeout
-s.settimeout(0.1)
+s.settimeout(0.5)
 try:
     while True:
         # receive data from the server and decoding to get the string.
-        msg = ser.readline().decode().strip().encode()
+        msg = ser.readline().decode().strip()
+        msg_payload = f"{msg_str};".encode()
 
         if len(msg) == 0:
             continue
@@ -145,23 +146,37 @@ try:
         response_ack = False
         response_err = False
         attempts = 0
-        while (not response_ack) and (not response_err):
+        while not (response_ack or response_err):
+
+            # clear socket buffer
+            s.setblocking(False)
+            try:
+                s.recv(1024)
+            except BlockingIOError:
+                pass
+            s.setblocking(True)
 
             # if no response after 5 attempts give up
             if attempts > 5:
-                print(f"No responses: <{msg}>")
+                print(f"No responses: <{msg_payload.decode().strip()}>")
                 break
 
-            s.send(msg)
-            print(f"Sent: <{msg.decode()}>")
+            s.send(msg_payload)
+            print(f"Sent: <{msg_payload.decode().strip()}>")
             attempts += 1
 
             # check for response
             try:
                 response_msg = s.recv(1024)
                 response_msg = response_msg.decode().strip()
-                response_ack = (response_msg == f"ACK: {msg.decode().strip()}")
-                response_err = (response_msg == f"ERR: {msg.decode().strip()}")
+                responses = response_msg.rstrip(';').split(';')
+                for response in responses:
+
+                    response_ack = (response == f"ACK: {msg.strip()}")
+                    response_err = (response == f"ERR: {msg.strip()}")
+
+                    if response_ack or response_err:
+                        break
             except socket.timeout:
                 print("No ACK")
 
@@ -173,7 +188,7 @@ try:
         if response_ack:
             print(f"Received Response: {response_msg}")
 
-            msg_str = msg.decode().strip()
+            msg_str = msg
 
             # Track switch state changes
             parse_and_track_state(msg_str)
