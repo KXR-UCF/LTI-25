@@ -42,6 +42,11 @@ interface InitialSwitchStatesMessage {
     switch4: boolean;
     switch5: boolean;
     switch6: boolean;
+    switch7: boolean;
+    switch8: boolean;
+    switch9: boolean;
+    switch10: boolean;
+    continuity: boolean;
     launchKey: boolean;
     abort: boolean;
   };
@@ -69,6 +74,11 @@ export default function Home() {
     switch4: false,
     switch5: false,
     switch6: false,
+    switch7: false,
+    switch8: false,
+    switch9: false,
+    switch10: false,
+    continuity: false,
     launchKey: false,
     abort: false
   });
@@ -156,7 +166,7 @@ export default function Home() {
               const { switch: switchName, state } = message.data;
 
               // Validate switch name to prevent injection
-              const validSwitches = ['switch1', 'switch2', 'switch3', 'switch4', 'switch5', 'switch6', 'launchKey', 'abort'];
+              const validSwitches = ['switch1', 'switch2', 'switch3', 'switch4', 'switch5', 'switch6', 'switch7', 'switch8', 'switch9', 'switch10', 'continuity', 'launchKey', 'abort'];
               if (!validSwitches.includes(switchName)) {
                 console.warn(`[WebSocket] ⚠️  Invalid switch name: ${switchName}`);
                 return;

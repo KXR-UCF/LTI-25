@@ -20,7 +20,7 @@ interface SolidUIProps {
   connectionStatus: 'disconnected' | 'connecting' | 'connected';
   startTime: number | null;
   switchStates: {
-    switch6: boolean;
+    continuity: boolean;
     launchKey: boolean;
     abort: boolean;
   };
@@ -360,7 +360,7 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
             <div className="grid grid-cols-2 gap-3 flex-1">
               <div
                 className={`flex flex-col p-4 rounded-lg border transition-all duration-300 justify-center items-center space-y-3 ${
-                  switchStates.switch6
+                  switchStates.continuity
                     ? 'bg-green-100 dark:bg-green-900/30 border-green-500/50'
                     : 'bg-red-100 dark:bg-red-900/30 border-red-500/50'
                 }`}
@@ -368,11 +368,11 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
                 <div className="flex items-center gap-2">
                   <p className="text-base font-semibold text-gray-900 dark:text-white">CONTINUITY</p>
                   <div className={`w-3 h-3 rounded-full ${
-                    switchStates.switch6 ? 'bg-green-500' : 'bg-red-500'
+                    switchStates.continuity ? 'bg-green-500' : 'bg-red-500'
                   }`}></div>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-white/70 font-medium">
-                  {switchStates.switch6 ? 'ACTIVE' : 'INACTIVE'}
+                  {switchStates.continuity ? 'ACTIVE' : 'INACTIVE'}
                 </p>
               </div>
               <div

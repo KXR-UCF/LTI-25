@@ -21,12 +21,17 @@ let lastTimestamp = null;
 
 // Current switch states - persisted in memory
 const currentSwitchStates = {
-  switch1: false,
-  switch2: false,
-  switch3: false,
-  switch4: false,
-  switch5: false,
-  switch6: false,
+  switch1: false,   // NOX FILL
+  switch2: false,   // NOX VENT
+  switch3: false,   // NOX RELIEF
+  switch4: false,   // UNMAPPED
+  switch5: false,   // UNMAPPED
+  switch6: false,   // N2 FILL
+  switch7: false,   // N2 VENT
+  switch8: false,   // N2 RELIEF
+  switch9: false,   // UNMAPPED
+  switch10: false,  // UNMAPPED
+  continuity: false, // CONTINUITY (not mapped to hardware switch)
   launchKey: false,
   abort: false
 };
@@ -138,24 +143,28 @@ let pipeStream = null;
 let readlineInterface = null;
 
 // Valid switch names for validation
-const VALID_SWITCHES = ['switch1', 'switch2', 'switch3', 'switch4', 'switch5', 'switch6', 'launchKey', 'abort'];
+const VALID_SWITCHES = ['switch1', 'switch2', 'switch3', 'switch4', 'switch5', 'switch6', 'switch7', 'switch8', 'switch9', 'switch10', 'continuity', 'launchKey', 'abort'];
 
 // Parse switch message into state object
 function parseSwitchMessage(msg) {
   const trimmed = msg.trim();
 
-  // "1 Open" / "1 Close" → switches 1-6 (or multi-digit like "10 Open")
+  // "1 Open" / "1 Close" → switches (multi-digit like "10 Open" supported)
   if (/^\d+\s+(Open|Close)$/.test(trimmed)) {
     const parts = trimmed.split(/\s+/);
     const switchNum = parts[0];
     const state = parts[1] === 'Open';
     const switchMap = {
-      '1': 'switch1',  // NOX FILL
-      '2': 'switch2',  // NOX VENT
-      '3': 'switch3',  // NOX RELIEF
-      '4': 'switch4',  // N2 FILL
-      '5': 'switch5',  // N2 VENT
-      '6': 'switch6',  // CONTINUITY
+      '1': 'switch1',   // NOX FILL
+      '2': 'switch2',   // NOX VENT
+      '3': 'switch3',   // NOX RELIEF
+      '4': 'switch4',   // UNMAPPED
+      '5': 'switch5',   // UNMAPPED
+      '6': 'switch6',   // N2 FILL
+      '7': 'switch7',   // N2 VENT
+      '8': 'switch8',   // N2 RELIEF
+      '9': 'switch9',   // UNMAPPED
+      '10': 'switch10', // UNMAPPED
     };
 
     const switchName = switchMap[switchNum];

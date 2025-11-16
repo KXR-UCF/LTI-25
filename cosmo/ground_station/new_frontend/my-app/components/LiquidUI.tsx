@@ -36,6 +36,11 @@ interface LiquidUIProps {
     switch4: boolean;
     switch5: boolean;
     switch6: boolean;
+    switch7: boolean;
+    switch8: boolean;
+    switch9: boolean;
+    switch10: boolean;
+    continuity: boolean;
     launchKey: boolean;
     abort: boolean;
   };
@@ -346,76 +351,194 @@ export default function LiquidUI({
               SYSTEM CONTROLS
             </CardTitle>
           </CardHeader>
-          <CardContent className="h-full flex flex-col gap-3">
-            <div className="grid grid-cols-2 gap-3 grid-rows-3 flex-1">
-              {[
-                { key: "switch1", label: "NOX FILL" },
-                { key: "switch2", label: "NOX VENT" },
-                { key: "switch3", label: "NOX RELIEF" },
-                { key: "switch4", label: "N2 FILL" },
-                { key: "switch5", label: "N2 VENT" },
-                { key: "switch6", label: "CONTINUITY" },
-              ].map(({ key, label }) => (
+          <CardContent className="h-full flex flex-col gap-4">
+            {/* NOX Systems */}
+            <div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-white/50 mb-2 uppercase tracking-wider">
+                NOX Systems
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { key: "switch1", label: "NOX FILL" },
+                  { key: "switch2", label: "NOX VENT" },
+                ].map(({ key, label }) => (
+                  <div
+                    key={key}
+                    className={`flex flex-col p-3 rounded-lg border transition-all duration-300 justify-center items-center space-y-2 ${
+                      switchStates[key as keyof typeof switchStates]
+                        ? "bg-green-100 dark:bg-green-900/30 border-green-500/50"
+                        : "bg-red-100 dark:bg-red-900/30 border-red-500/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                        {label}
+                      </p>
+                      <div
+                        className={`w-2.5 h-2.5 rounded-full ${
+                          switchStates[key as keyof typeof switchStates]
+                            ? "bg-green-500"
+                            : "bg-red-500"
+                        }`}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
+                      {switchStates[key as keyof typeof switchStates]
+                        ? "ACTIVE"
+                        : "INACTIVE"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 gap-3 mt-3">
                 <div
-                  key={key}
                   className={`flex flex-col p-3 rounded-lg border transition-all duration-300 justify-center items-center space-y-2 ${
-                    switchStates[key as keyof typeof switchStates]
+                    switchStates.switch3
                       ? "bg-green-100 dark:bg-green-900/30 border-green-500/50"
                       : "bg-red-100 dark:bg-red-900/30 border-red-500/50"
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <p className="text-xs font-semibold text-gray-900 dark:text-white">
-                      {label}
+                      NOX RELIEF
                     </p>
                     <div
                       className={`w-2.5 h-2.5 rounded-full ${
-                        switchStates[key as keyof typeof switchStates]
-                          ? "bg-green-500"
-                          : "bg-red-500"
+                        switchStates.switch3 ? "bg-green-500" : "bg-red-500"
                       }`}
                     ></div>
                   </div>
                   <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
-                    {switchStates[key as keyof typeof switchStates]
-                      ? "ACTIVE"
-                      : "INACTIVE"}
+                    {switchStates.switch3 ? "ACTIVE" : "INACTIVE"}
                   </p>
                 </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div
-                className={`flex flex-col p-3 rounded-lg border transition-all duration-300 justify-center items-center space-y-2 ${
-                  switchStates.launchKey
-                    ? "bg-green-100 dark:bg-green-900/30 border-green-500/50"
-                    : "bg-red-100 dark:bg-red-900/30 border-red-500/50"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <p className="text-xs font-semibold text-gray-900 dark:text-white">
-                    LAUNCH KEY
-                  </p>
-                  <div
-                    className={`w-2.5 h-2.5 rounded-full ${
-                      switchStates.launchKey ? "bg-green-500" : "bg-red-500"
-                    }`}
-                  ></div>
-                </div>
-                <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
-                  {switchStates.launchKey ? "ACTIVE" : "INACTIVE"}
-                </p>
               </div>
-              <div className="flex flex-col p-3 rounded-lg border transition-all duration-300 bg-red-100 dark:bg-red-900/30 border-red-500/50 justify-center items-center space-y-2">
-                <div className="flex items-center gap-2">
-                  <p className="text-xs font-semibold text-gray-900 dark:text-white">
-                    ABORT
+            </div>
+
+            {/* N2 Systems */}
+            <div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-white/50 mb-2 uppercase tracking-wider">
+                N2 Systems
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { key: "switch6", label: "N2 FILL" },
+                  { key: "switch7", label: "N2 VENT" },
+                ].map(({ key, label }) => (
+                  <div
+                    key={key}
+                    className={`flex flex-col p-3 rounded-lg border transition-all duration-300 justify-center items-center space-y-2 ${
+                      switchStates[key as keyof typeof switchStates]
+                        ? "bg-green-100 dark:bg-green-900/30 border-green-500/50"
+                        : "bg-red-100 dark:bg-red-900/30 border-red-500/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                        {label}
+                      </p>
+                      <div
+                        className={`w-2.5 h-2.5 rounded-full ${
+                          switchStates[key as keyof typeof switchStates]
+                            ? "bg-green-500"
+                            : "bg-red-500"
+                        }`}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
+                      {switchStates[key as keyof typeof switchStates]
+                        ? "ACTIVE"
+                        : "INACTIVE"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 gap-3 mt-3">
+                <div
+                  className={`flex flex-col p-3 rounded-lg border transition-all duration-300 justify-center items-center space-y-2 ${
+                    switchStates.switch8
+                      ? "bg-green-100 dark:bg-green-900/30 border-green-500/50"
+                      : "bg-red-100 dark:bg-red-900/30 border-red-500/50"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                      N2 RELIEF
+                    </p>
+                    <div
+                      className={`w-2.5 h-2.5 rounded-full ${
+                        switchStates.switch8 ? "bg-green-500" : "bg-red-500"
+                      }`}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
+                    {switchStates.switch8 ? "ACTIVE" : "INACTIVE"}
                   </p>
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
                 </div>
-                <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
-                  {switchStates.abort ? "ENGAGED" : "STANDBY"}
-                </p>
+              </div>
+            </div>
+
+            {/* Control Systems */}
+            <div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-white/50 mb-2 uppercase tracking-wider">
+                Control Systems
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div
+                  className={`flex flex-col p-3 rounded-lg border transition-all duration-300 justify-center items-center space-y-2 ${
+                    switchStates.continuity
+                      ? "bg-green-100 dark:bg-green-900/30 border-green-500/50"
+                      : "bg-red-100 dark:bg-red-900/30 border-red-500/50"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                      CONTINUITY
+                    </p>
+                    <div
+                      className={`w-2.5 h-2.5 rounded-full ${
+                        switchStates.continuity ? "bg-green-500" : "bg-red-500"
+                      }`}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
+                    {switchStates.continuity ? "ACTIVE" : "INACTIVE"}
+                  </p>
+                </div>
+                <div
+                  className={`flex flex-col p-3 rounded-lg border transition-all duration-300 justify-center items-center space-y-2 ${
+                    switchStates.launchKey
+                      ? "bg-green-100 dark:bg-green-900/30 border-green-500/50"
+                      : "bg-red-100 dark:bg-red-900/30 border-red-500/50"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                      LAUNCH KEY
+                    </p>
+                    <div
+                      className={`w-2.5 h-2.5 rounded-full ${
+                        switchStates.launchKey ? "bg-green-500" : "bg-red-500"
+                      }`}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
+                    {switchStates.launchKey ? "ACTIVE" : "INACTIVE"}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-3 mt-3">
+                <div className="flex flex-col p-3 rounded-lg border transition-all duration-300 bg-red-100 dark:bg-red-900/30 border-red-500/50 justify-center items-center space-y-2">
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                      ABORT SYSTEM
+                    </p>
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
+                    {switchStates.abort ? "ENGAGED" : "STANDBY"}
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>

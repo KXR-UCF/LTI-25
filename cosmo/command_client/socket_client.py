@@ -15,12 +15,17 @@ if not os.path.exists(PIPE_PATH):
 
 # Track current switch states to resend on reconnection
 current_switch_states = {
-    'switch1': False,
-    'switch2': False,
-    'switch3': False,
-    'switch4': False,
-    'switch5': False,
-    'switch6': False,
+    'switch1': False,   # NOX FILL
+    'switch2': False,   # NOX VENT
+    'switch3': False,   # NOX RELIEF
+    'switch4': False,   # UNMAPPED
+    'switch5': False,   # UNMAPPED
+    'switch6': False,   # N2 FILL
+    'switch7': False,   # N2 VENT
+    'switch8': False,   # N2 RELIEF
+    'switch9': False,   # UNMAPPED
+    'switch10': False,  # UNMAPPED
+    'continuity': False, # CONTINUITY (not mapped to hardware switch)
     'launchKey': False,
     'abort': False
 }
@@ -39,19 +44,23 @@ def open_pipe():
 # Function to parse and track switch state from message
 def parse_and_track_state(msg_str):
     """Parse message and update current_switch_states. Returns True if it's a switch message."""
-    # "1 Open" / "1 Close" → switches 1-6 (or multi-digit like "10 Open")
+    # "1 Open" / "1 Close" → switches (multi-digit like "10 Open" supported)
     if len(msg_str) >= 3 and (msg_str.endswith('Open') or msg_str.endswith('Close')):
         parts = msg_str.split()
         if len(parts) >= 2 and parts[0].isdigit():
             switch_num = parts[0]
             state = msg_str.endswith('Open')
             switch_map = {
-                '1': 'switch1',
-                '2': 'switch2',
-                '3': 'switch3',
-                '4': 'switch4',
-                '5': 'switch5',
-                '6': 'switch6',
+                '1': 'switch1',   # NOX FILL
+                '2': 'switch2',   # NOX VENT
+                '3': 'switch3',   # NOX RELIEF
+                '4': 'switch4',   # UNMAPPED
+                '5': 'switch5',   # UNMAPPED
+                '6': 'switch6',   # N2 FILL
+                '7': 'switch7',   # N2 VENT
+                '8': 'switch8',   # N2 RELIEF
+                '9': 'switch9',   # UNMAPPED
+                '10': 'switch10', # UNMAPPED
             }
             if switch_num in switch_map:
                 current_switch_states[switch_map[switch_num]] = state
@@ -90,11 +99,15 @@ def resend_all_states(pipe):
         'switch4': '4',
         'switch5': '5',
         'switch6': '6',
+        'switch7': '7',
+        'switch8': '8',
+        'switch9': '9',
+        'switch10': '10',
     }
 
     try:
-        # Send switch 1-6 states
-        for switch_name in ['switch1', 'switch2', 'switch3', 'switch4', 'switch5', 'switch6']:
+        # Send switch 1-10 states
+        for switch_name in ['switch1', 'switch2', 'switch3', 'switch4', 'switch5', 'switch6', 'switch7', 'switch8', 'switch9', 'switch10']:
             switch_num = switch_name.replace('switch', '')
             state = current_switch_states[switch_name]
             msg = f"{switch_num} {'Open' if state else 'Close'}"
