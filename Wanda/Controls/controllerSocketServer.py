@@ -128,6 +128,7 @@ def decode_cmd(cmd: str):
         global abort
         abort = (cmd_lower == "abort open".lower())
         switch_id = 'ABORT'
+        # state_open = not abort
         state_open = False
 
     else:
@@ -149,6 +150,8 @@ def get_affected_relays(switch_id, state_open):
 
             if relay["switch"] == switch_id or abort:
                 # NOTE: all relays controlled by this switch would be set to the same state
+                if abort:
+                    state_open = False
                 relays_changed.append({"pi":pi_id, "relay":relay_id, "state":state_open})
 
     return relays_changed

@@ -188,7 +188,7 @@ try:
         if response_ack:
             print(f"Received Response: {response_msg}")
 
-            msg_str = msg_payload.decode().strip()
+            msg_str = msg
 
             # Track switch state changes
             parse_and_track_state(msg_str)
