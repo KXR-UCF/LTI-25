@@ -64,5 +64,28 @@ export default function UPlotChart({ data, options, onCreate, onDelete }: UPlotC
     }
   }, [data]);
 
+  useEffect(() => {
+    // Handle window resize to dynamically resize charts
+    const handleResize = () => {
+      if (!containerRef.current || !plotInstance.current) return;
+
+      const width = containerRef.current.offsetWidth * 0.95;
+      const height = containerRef.current.offsetHeight * 0.95;
+
+      if (width > 0 && height > 0) {
+        plotInstance.current.setSize({
+          width: Math.floor(width),
+          height: Math.floor(height),
+        });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   return <div ref={containerRef} className="w-full h-full flex items-center justify-center" />;
 }
