@@ -26,7 +26,7 @@ echo "Starting Cosmo..."
 tmux kill-session -t "$SESSION" 2>/dev/null
 
 # Create new session and first window
-tmux new-session -d -s "$SESSION" -n socket
+tmux new-session -d -s "$SESSION"
 
 # Start socket client in new window
 echo "Starting socket client..."
@@ -44,10 +44,11 @@ tmux send-keys -t "$SESSION" \
 # Start frontend in new window
 echo "Starting frontend..."
 tmux split-window -v -t "$SESSION"
-tmux send-keys -t "$SESSION:2" \
+tmux send-keys -t "$SESSION" \
     "cd $FRONTEND_PATH" C-m \
     "npm run dev" C-m
 
 echo "Attaching to session..."
-tmux attach-session -t "$SESSION"
-wait
+tmux attach-session -t "$SESSION" &
+TMUX_PID=$1
+wait $TMUX_PID
