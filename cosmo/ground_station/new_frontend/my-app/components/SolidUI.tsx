@@ -24,9 +24,10 @@ interface SolidUIProps {
     launchKey: boolean;
     abort: boolean;
   };
+  recordingState: 'idle' | 'recording' | 'stopped';
 }
 
-export default function SolidUI({ telemetryData, connectionStatus, startTime, switchStates }: SolidUIProps) {
+export default function SolidUI({ telemetryData, connectionStatus, startTime, switchStates, recordingState }: SolidUIProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -48,6 +49,12 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
 
     telemetryData.forEach(row => {
       const time = new Date(row.timestamp).getTime() / 1000;
+
+      // If recording or stopped, only show data from START onward
+      if (recordingState !== 'idle' && time < startTime) {
+        return; // Skip this data point
+      }
+
       timestamps.push(time - startTime);
       cell1.push(row.cell1_force);
       cell2.push(row.cell2_force);
@@ -56,7 +63,7 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
     });
 
     return [timestamps, cell1, cell2, cell3, netForce];
-  }, [telemetryData, startTime]);
+  }, [telemetryData, startTime, recordingState]);
 
   // Convert telemetry data to uPlot format for pressure
   const pressureData = useMemo((): uPlot.AlignedData => {
@@ -69,12 +76,18 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
 
     telemetryData.forEach(row => {
       const time = new Date(row.timestamp).getTime() / 1000;
+
+      // If recording or stopped, only show data from START onward
+      if (recordingState !== 'idle' && time < startTime) {
+        return; // Skip this data point
+      }
+
       timestamps.push(time - startTime);
       pressure.push(row.pressure_pt1);
     });
 
     return [timestamps, pressure];
-  }, [telemetryData, startTime]);
+  }, [telemetryData, startTime, recordingState]);
 
   // Calculate latest data and update peaks incrementally
   const latestData = useMemo(() => {
@@ -127,13 +140,16 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
         x: {
           time: false,
           range: (u, min, max) => {
-            // Always show a 30-second window
-            // If data is less than 30s, show 0-30
-            // If data exceeds 30s, show a sliding 30s window
-            if (max <= 30) {
-              return [0, 30];
+            if (recordingState === 'idle' || recordingState === 'recording') {
+              // 30-second sliding window for both idle and recording
+              if (max <= 30) {
+                return [0, 30];
+              } else {
+                return [max - 30, max];
+              }
             } else {
-              return [max - 30, max];
+              // recordingState === 'stopped': show full range
+              return [0, max];
             }
           },
         },
@@ -193,7 +209,7 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
         show: true,
       },
     };
-  }, [isDark]);
+  }, [isDark, recordingState]);
 
   // Pressure chart options
   const pressureOptions = useMemo((): uPlot.Options => {
@@ -215,13 +231,16 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
         x: {
           time: false,
           range: (u, min, max) => {
-            // Always show a 30-second window
-            // If data is less than 30s, show 0-30
-            // If data exceeds 30s, show a sliding 30s window
-            if (max <= 30) {
-              return [0, 30];
+            if (recordingState === 'idle' || recordingState === 'recording') {
+              // 30-second sliding window for both idle and recording
+              if (max <= 30) {
+                return [0, 30];
+              } else {
+                return [max - 30, max];
+              }
             } else {
-              return [max - 30, max];
+              // recordingState === 'stopped': show full range
+              return [0, max];
             }
           },
         },
@@ -266,7 +285,7 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
         show: true,
       },
     };
-  }, [isDark]);
+  }, [isDark, recordingState]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">

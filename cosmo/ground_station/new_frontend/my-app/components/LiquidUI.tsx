@@ -44,6 +44,7 @@ interface LiquidUIProps {
     launchKey: boolean;
     abort: boolean;
   };
+  recordingState: 'idle' | 'recording' | 'stopped';
 }
 
 export default function LiquidUI({
@@ -51,6 +52,7 @@ export default function LiquidUI({
   connectionStatus,
   startTime,
   switchStates,
+  recordingState,
 }: LiquidUIProps) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -72,6 +74,12 @@ export default function LiquidUI({
 
     telemetryData.forEach((row) => {
       const time = new Date(row.timestamp).getTime() / 1000;
+
+      // If recording or stopped, only show data from START onward
+      if (recordingState !== 'idle' && time < startTime) {
+        return; // Skip this data point
+      }
+
       timestamps.push(time - startTime);
       cell1.push(row.cell1_force);
       cell2.push(row.cell2_force);
@@ -80,7 +88,7 @@ export default function LiquidUI({
     });
 
     return [timestamps, cell1, cell2, cell3, netForce];
-  }, [telemetryData, startTime]);
+  }, [telemetryData, startTime, recordingState]);
 
   // Convert telemetry data to uPlot format for thermal
   const thermalData = useMemo((): uPlot.AlignedData => {
@@ -94,13 +102,19 @@ export default function LiquidUI({
 
     telemetryData.forEach((row) => {
       const time = new Date(row.timestamp).getTime() / 1000;
+
+      // If recording or stopped, only show data from START onward
+      if (recordingState !== 'idle' && time < startTime) {
+        return; // Skip this data point
+      }
+
       timestamps.push(time - startTime);
       chamber.push(row.chamber_temp);
       nozzle.push(row.nozzle_temp);
     });
 
     return [timestamps, chamber, nozzle];
-  }, [telemetryData, startTime]);
+  }, [telemetryData, startTime, recordingState]);
 
   // Calculate latest data and update peaks incrementally
   const latestData = useMemo(() => {
@@ -156,6 +170,7 @@ export default function LiquidUI({
           axisUnit={" LBS"}
           yMin={0}
           yMax={1000}
+          recordingState={recordingState}
           lines={[
             {
               label: "Load Cell 1",
@@ -191,6 +206,7 @@ export default function LiquidUI({
           axisUnit={" C"}
           yMin={0}
           yMax={3000}
+          recordingState={recordingState}
           lines={[
             {
               label: "Chamber Temperature",

@@ -27,6 +27,7 @@ interface ChartProps {
   axisUnit: string;
   yMin: number;
   yMax: number;
+  recordingState: 'idle' | 'recording' | 'stopped';
   lines: {
     label: string;
     stroke: string;
@@ -44,6 +45,7 @@ const Chart = ({
   axisUnit,
   yMin,
   yMax,
+  recordingState,
   lines,
   telemetryData,
   data,
@@ -67,13 +69,16 @@ const Chart = ({
         x: {
           time: false,
           range: (u, min, max) => {
-            // Always show a 30-second window
-            // If data is less than 30s, show 0-30
-            // If data exceeds 30s, show a sliding 30s window
-            if (max <= 30) {
-              return [0, 30];
+            if (recordingState === 'idle' || recordingState === 'recording') {
+              // 30-second sliding window for both idle and recording
+              if (max <= 30) {
+                return [0, 30];
+              } else {
+                return [max - 30, max];
+              }
             } else {
-              return [max - 30, max];
+              // recordingState === 'stopped': show full range
+              return [0, max];
             }
           },
         },
@@ -124,7 +129,7 @@ const Chart = ({
         show: true,
       },
     };
-  }, [isDark]);
+  }, [isDark, recordingState]);
 
   return (
     <>
