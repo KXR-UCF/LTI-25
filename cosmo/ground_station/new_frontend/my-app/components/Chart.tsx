@@ -1,6 +1,6 @@
-import { useMemo } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
-import UPlotChart from "./UPlotChart";
+import { useMemo } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
+import UPlotChart from './UPlotChart';
 
 interface TelemetryRow {
   timestamp: string;
@@ -61,9 +61,6 @@ const Chart = ({
           y: true,
           uni: 50,
         },
-        sync: {
-          key: "telemetry",
-        },
       },
       scales: {
         x: recordingState === 'stopped'
@@ -88,26 +85,19 @@ const Chart = ({
       },
       axes: [
         {
-          label: "Runtime (s)",
-          stroke: isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.6)",
+          label: 'Runtime (s)',
+          stroke: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.6)',
           grid: {
-            stroke: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.1)",
+            stroke: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.1)',
             width: 1,
           },
           splits: (u) => {
             const min = Math.floor(u.scales.x.min || 0);
-            const max = Math.ceil(u.scales.x.max || 10);
-            const range = max - min;
+            const max = Math.ceil(u.scales.x.max || 30);
 
-            // Dynamically adjust interval based on range to prevent overcrowding
-            let interval = 1;
-            if (range > 30) interval = 2;
-            if (range > 60) interval = 5;
-            if (range > 120) interval = 10;
-
+            // Always use 1-second intervals
             const splits = [];
-            const start = Math.floor(min / interval) * interval;
-            for (let i = start; i <= max; i += interval) {
+            for (let i = min; i <= max; i += 1) {
               splits.push(i);
             }
             return splits;
@@ -115,21 +105,21 @@ const Chart = ({
         },
         {
           label: axisLabel,
-          stroke: isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.6)",
+          stroke: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.6)',
           grid: {
-            stroke: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.1)",
+            stroke: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.1)',
             width: 1,
           },
           values: (u, vals) => vals.map((v) => v + axisUnit),
           labelGap: 10,
         },
       ],
-      series: [{ label: "Time" }, ...lines],
+      series: [{ label: 'Time' }, ...lines],
       legend: {
         show: true,
       },
     };
-  }, [isDark, recordingState]);
+  }, [isDark, recordingState, chartClass, yMin, yMax, axisLabel, axisUnit, lines]);
 
   return (
     <>

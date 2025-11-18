@@ -132,9 +132,6 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
           y: true,
           uni: 50,
         },
-        sync: {
-          key: 'telemetry',
-        },
       },
       scales: {
         x: recordingState === 'stopped'
@@ -166,7 +163,7 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
           const min = Math.floor(u.scales.x.min || 0);
           const max = Math.ceil(u.scales.x.max || 30);
 
-          // Always use 1-second intervals since we're showing a fixed 30s window
+          // Always use 1-second intervals
           const splits = [];
           for (let i = min; i <= max; i += 1) {
             splits.push(i);
@@ -223,9 +220,6 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
           y: true,
           uni: 50,
         },
-        sync: {
-          key: 'telemetry',
-        },
       },
       scales: {
         x: recordingState === 'stopped'
@@ -257,7 +251,7 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
           const min = Math.floor(u.scales.x.min || 0);
           const max = Math.ceil(u.scales.x.max || 30);
 
-          // Always use 1-second intervals since we're showing a fixed 30s window
+          // Always use 1-second intervals
           const splits = [];
           for (let i = min; i <= max; i += 1) {
             splits.push(i);
