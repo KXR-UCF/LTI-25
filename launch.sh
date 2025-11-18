@@ -7,6 +7,11 @@
 
 SESSION="cosmo"
 
+# Paths
+SOCKET_PATH="cosmo/command_client"
+BACKEND_PATH="cosmo/ground_station/backend"
+FRONTEND_PATH="cosmo/new_frontend/my-app"
+
 cleanup()
 {
     echo "Stopping system..."
@@ -14,24 +19,29 @@ cleanup()
     exit 0
 }
 
-trap cleanup SIGINT SIGTERM
-
 echo "Starting Cosmo..."
 
 # Kill old session if exists
 tmux kill-session -t "$SESSION" 2>/dev/null
 
 # Start new tmux session with socket client
-tmux new-session -d -s "$SESSION" \
-    "cd cosmo/command_client && python3 socket_client.py"
+echo "Starting socket client..."
+tmux new-session -s "$SESSION" -n "$SESSION"
+tmux send-keys -t  "cd $SOCKET_PATH && python3 socket_client.py" Enter
 
 # Split into right pane for backend
-tmux split-window -h -t "$SESSION" \
-    "cd cosmo/ground_station/backend && npm start"
+echo "Starting backend..."
+tmux split-window -h -t "$SESSION"
+tmux send-keys -t "cd $BACKEND_PATH && npm start" Enter
 
 # Split bottom pane for frontend
-tmux split-window -v -t "$SESSION:0.0" \
-    "cd cosmo/new_frontend/my-app && npm run dev"
+echo "Starting frontend..."
+tmux split-window -v -t "$SESSION"
+tmux send-keys -t "cd $FRONTEND_PATH && npm run dev" Enter
 
 # Attach so user sees all 3 processes
-tmux attach-session -t "$SESSION"
+#tmux attach-session -t "$SESSION"
+
+trap cleanup SIGINT SIGTERM
+echo "Cosmo is running - Press Ctrl+C to stop"
+wait
