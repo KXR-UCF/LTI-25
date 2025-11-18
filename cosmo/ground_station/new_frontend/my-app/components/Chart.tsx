@@ -25,6 +25,8 @@ interface ChartProps {
   chartClass: string;
   axisLabel: string;
   axisUnit: string;
+  yMin: number;
+  yMax: number;
   lines: {
     label: string;
     stroke: string;
@@ -40,6 +42,8 @@ const Chart = ({
   chartClass,
   axisLabel,
   axisUnit,
+  yMin,
+  yMax,
   lines,
   telemetryData,
   data,
@@ -62,9 +66,19 @@ const Chart = ({
       scales: {
         x: {
           time: false,
+          range: (u, min, max) => {
+            // Always show a 30-second window
+            // If data is less than 30s, show 0-30
+            // If data exceeds 30s, show a sliding 30s window
+            if (max <= 30) {
+              return [0, 30];
+            } else {
+              return [max - 30, max];
+            }
+          },
         },
         y: {
-          auto: true,
+          range: [yMin, yMax],
         },
       },
       axes: [
@@ -74,6 +88,24 @@ const Chart = ({
           grid: {
             stroke: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.1)",
             width: 1,
+          },
+          splits: (u) => {
+            const min = Math.floor(u.scales.x.min || 0);
+            const max = Math.ceil(u.scales.x.max || 10);
+            const range = max - min;
+
+            // Dynamically adjust interval based on range to prevent overcrowding
+            let interval = 1;
+            if (range > 30) interval = 2;
+            if (range > 60) interval = 5;
+            if (range > 120) interval = 10;
+
+            const splits = [];
+            const start = Math.floor(min / interval) * interval;
+            for (let i = start; i <= max; i += interval) {
+              splits.push(i);
+            }
+            return splits;
           },
         },
         {

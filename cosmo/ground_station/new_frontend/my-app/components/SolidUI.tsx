@@ -126,9 +126,19 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
       scales: {
         x: {
           time: false,
+          range: (u, min, max) => {
+            // Always show a 30-second window
+            // If data is less than 30s, show 0-30
+            // If data exceeds 30s, show a sliding 30s window
+            if (max <= 30) {
+              return [0, 30];
+            } else {
+              return [max - 30, max];
+            }
+          },
         },
         y: {
-          auto: true,
+          range: [0, 5000],
         },
       },
     axes: [
@@ -136,6 +146,17 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
         label: 'Runtime (s)',
         stroke: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.6)',
         grid: { stroke: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.1)', width: 1 },
+        splits: (u) => {
+          const min = Math.floor(u.scales.x.min || 0);
+          const max = Math.ceil(u.scales.x.max || 30);
+
+          // Always use 1-second intervals since we're showing a fixed 30s window
+          const splits = [];
+          for (let i = min; i <= max; i += 1) {
+            splits.push(i);
+          }
+          return splits;
+        },
       },
       {
         label: 'Force (N)',
@@ -193,9 +214,19 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
       scales: {
         x: {
           time: false,
+          range: (u, min, max) => {
+            // Always show a 30-second window
+            // If data is less than 30s, show 0-30
+            // If data exceeds 30s, show a sliding 30s window
+            if (max <= 30) {
+              return [0, 30];
+            } else {
+              return [max - 30, max];
+            }
+          },
         },
         y: {
-          auto: true,
+          range: [0, 1000],
         },
       },
     axes: [
@@ -203,6 +234,17 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
         label: 'Runtime (s)',
         stroke: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.6)',
         grid: { stroke: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.1)', width: 1 },
+        splits: (u) => {
+          const min = Math.floor(u.scales.x.min || 0);
+          const max = Math.ceil(u.scales.x.max || 30);
+
+          // Always use 1-second intervals since we're showing a fixed 30s window
+          const splits = [];
+          for (let i = min; i <= max; i += 1) {
+            splits.push(i);
+          }
+          return splits;
+        },
       },
       {
         label: 'Pressure (PSI)',

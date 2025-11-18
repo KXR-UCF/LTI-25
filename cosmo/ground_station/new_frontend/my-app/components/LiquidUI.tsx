@@ -154,6 +154,8 @@ export default function LiquidUI({
           chartClass={"load-cell-chart"}
           axisLabel={"Force (LBS)"}
           axisUnit={" LBS"}
+          yMin={0}
+          yMax={1000}
           lines={[
             {
               label: "Load Cell 1",
@@ -187,6 +189,8 @@ export default function LiquidUI({
           chartClass={"thermocouple-chart"}
           axisLabel={"Celcius (C)"}
           axisUnit={" C"}
+          yMin={0}
+          yMax={3000}
           lines={[
             {
               label: "Chamber Temperature",
