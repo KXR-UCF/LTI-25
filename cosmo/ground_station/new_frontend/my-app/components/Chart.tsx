@@ -66,22 +66,22 @@ const Chart = ({
         },
       },
       scales: {
-        x: {
-          time: false,
-          range: (u, min, max) => {
-            if (recordingState === 'idle' || recordingState === 'recording') {
-              // 30-second sliding window for both idle and recording
-              if (max <= 30) {
-                return [0, 30];
-              } else {
-                return [max - 30, max];
-              }
-            } else {
-              // recordingState === 'stopped': show full range
-              return [0, max];
+        x: recordingState === 'stopped'
+          ? {
+              time: false,
+              // No range function - allows free panning/zooming
             }
-          },
-        },
+          : {
+              time: false,
+              range: (u, min, max) => {
+                // 30-second sliding window for idle and recording
+                if (max <= 30) {
+                  return [0, 30];
+                } else {
+                  return [max - 30, max];
+                }
+              },
+            },
         y: {
           range: [yMin, yMax],
         },
