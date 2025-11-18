@@ -137,7 +137,7 @@ try:
     while True:
         # receive data from the server and decoding to get the string.
         msg = ser.readline().decode().strip()
-        msg_payload = f"{msg_str};".encode()
+        msg_payload = f"{msg};".encode()
 
         if len(msg) == 0:
             continue
@@ -169,7 +169,9 @@ try:
             try:
                 response_msg = s.recv(1024)
                 response_msg = response_msg.decode().strip()
-                responses = response_msg.rstrip(';').split(';')
+                responses = response_msg.
+                
+                strip(';').split(';')
                 for response in responses:
 
                     response_ack = (response == f"ACK: {msg.strip()}")
