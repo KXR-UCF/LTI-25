@@ -28,6 +28,8 @@ tmux kill-session -t "$SESSION" 2>/dev/null
 # Create new session and first window
 tmux new-session -d -s "$SESSION"
 
+tmux bind-key -t "$SESSION" C-c kill-session
+
 # Start socket client in new window
 echo "Starting socket client..."
 tmux send-keys -t "$SESSION:0" \
@@ -48,7 +50,8 @@ tmux send-keys -t "$SESSION" \
     "cd $FRONTEND_PATH" C-m \
     "npm run dev" C-m
 
+# Attach session
 echo "Attaching to session..."
-tmux attach-session -t "$SESSION" &
-TMUX_PID=$1
-wait $TMUX_PID
+tmux attach-session -t "$SESSION"
+
+cleanup
