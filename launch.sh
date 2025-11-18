@@ -10,7 +10,7 @@ SESSION="cosmo"
 # Paths
 SOCKET_PATH="cosmo/command_client"
 BACKEND_PATH="cosmo/ground_station/backend"
-FRONTEND_PATH="cosmo/new_frontend/my-app"
+FRONTEND_PATH="cosmo/new_frontend/app"
 
 cleanup() {
     echo "Stopping system..."
@@ -36,18 +36,18 @@ tmux send-keys -t "$SESSION:0" \
 
 # Start backend in new window
 echo "Starting backend..."
-tmux new-window -t "$SESSION:1" -n backend
-tmux send-keys -t "$SESSION:1" \
+tmux split-window -h -t "$SESSION"
+tmux send-keys -t "$SESSION" \
     "cd $BACKEND_PATH" C-m \
     "npm start" C-m
 
 # Start frontend in new window
 echo "Starting frontend..."
-tmux new-window -t "$SESSION:2" -n frontend
+tmux split-window -v -t "$SESSION"
 tmux send-keys -t "$SESSION:2" \
     "cd $FRONTEND_PATH" C-m \
     "npm run dev" C-m
 
 echo "Attaching to session..."
-
 tmux attach-session -t "$SESSION"
+wait
