@@ -42,6 +42,16 @@ export default function UPlotChart({ data, options, onCreate, onDelete }: UPlotC
 
     plotInstance.current = new uPlot(responsiveOptions, data, containerRef.current);
 
+    // Add double-click handler to reset y-axis to original range
+    const chart = plotInstance.current;
+    const handleDoubleClick = () => {
+      const yScale = responsiveOptions.scales?.y;
+      if (yScale && 'range' in yScale && Array.isArray(yScale.range)) {
+        chart.setScale('y', { min: yScale.range[0], max: yScale.range[1] });
+      }
+    };
+    chart.root.addEventListener('dblclick', handleDoubleClick);
+
     if (onCreate) {
       onCreate(plotInstance.current);
     }
