@@ -60,6 +60,43 @@ export default function LiquidUI({
   // Peak value tracking
   const [peakNetForce, setPeakNetForce] = useState(0);
 
+  // Memoize line configurations to prevent chart recreation
+  const loadCellLines = useMemo(() => [
+    {
+      label: "Load Cell 1",
+      stroke: "#10B981",
+      width: 2,
+    },
+    {
+      label: "Load Cell 2",
+      stroke: "#F59E0B",
+      width: 2,
+    },
+    {
+      label: "Load Cell 3",
+      stroke: "#EF4444",
+      width: 2,
+    },
+    {
+      label: "Net Force",
+      stroke: "#3B82F6",
+      width: 2,
+    },
+  ], []);
+
+  const thermalLines = useMemo(() => [
+    {
+      label: "Chamber Temperature",
+      stroke: "#F97316",
+      width: 2,
+    },
+    {
+      label: "Nozzle Temperature",
+      stroke: "#DC2626",
+      width: 2,
+    },
+  ], []);
+
   // Convert telemetry data to uPlot format for load cells
   const loadCellData = useMemo((): uPlot.AlignedData => {
     if (telemetryData.length === 0 || startTime === null) {
@@ -171,28 +208,7 @@ export default function LiquidUI({
           yMin={0}
           yMax={1000}
           recordingState={recordingState}
-          lines={[
-            {
-              label: "Load Cell 1",
-              stroke: "#10B981",
-              width: 2,
-            },
-            {
-              label: "Load Cell 2",
-              stroke: "#F59E0B",
-              width: 2,
-            },
-            {
-              label: "Load Cell 3",
-              stroke: "#EF4444",
-              width: 2,
-            },
-            {
-              label: "Net Force",
-              stroke: "#3B82F6",
-              width: 2,
-            },
-          ]}
+          lines={loadCellLines}
           telemetryData={telemetryData}
           data={loadCellData}
         />
@@ -207,18 +223,7 @@ export default function LiquidUI({
           yMin={0}
           yMax={3000}
           recordingState={recordingState}
-          lines={[
-            {
-              label: "Chamber Temperature",
-              stroke: "#F97316",
-              width: 2,
-            },
-            {
-              label: "Nozzle Temperature",
-              stroke: "#DC2626",
-              width: 2,
-            },
-          ]}
+          lines={thermalLines}
           telemetryData={telemetryData}
           data={thermalData}
         />
