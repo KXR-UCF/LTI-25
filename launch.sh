@@ -1,9 +1,10 @@
 #!/bin/bash
 
 # Automates start of cosmo
-# To run:
-# Give script command priviledges: chmod +x launch.sh
-# Run script: ./launch.sh
+# To run in command line: 'bash launch.sh'
+# To switch between tmux panes: 'crtl'+'b' followed by arrow key corresponding to pane direction
+# Close an individual pane: type 'exit' in the pane's terminal
+# Close tmux and trigger system shutdown: 'crtl'+'b' followed by 'd'
 
 SESSION="cosmo"
 
@@ -28,17 +29,13 @@ tmux kill-session -t "$SESSION" 2>/dev/null
 # Create new session and first window
 tmux new-session -d -s "$SESSION"
 
-tmux bind-key -t "$SESSION" C-c kill-session
-
 # Start socket client in new window
-echo "Starting socket client..."
 tmux send-keys -t "$SESSION:0" \
     "echo "Press Crtl+b and d to return to end the script"" C-m \
     "cd $SOCKET_PATH" C-m \
     "python3 socket_client.py" C-m
 
-# Start backend in new window
-echo "Starting backend..."
+# Start backend in new pane
 tmux split-window -h -t "$SESSION"
 tmux send-keys -t "$SESSION" \
     "echo "Press Crtl+b and d to return to end the script"" C-m \
@@ -46,7 +43,6 @@ tmux send-keys -t "$SESSION" \
     "npm start" C-m
 
 # Start frontend in new window
-echo "Starting frontend..."
 tmux split-window -v -t "$SESSION"
 tmux send-keys -t "$SESSION" \
     "echo "Press Crtl+b and d to return to end the script"" C-m \
@@ -54,7 +50,6 @@ tmux send-keys -t "$SESSION" \
     "npm run dev" C-m
 
 # Attach session
-echo "Attaching to session..."
 tmux attach-session -t "$SESSION"
 wait
-cleanup
+echo "Cosmo has been shut down"
