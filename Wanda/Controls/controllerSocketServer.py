@@ -252,13 +252,13 @@ try:
                 if success:
                     switch_states[switch_id] = state_open
 
-                    sender.row(
-                        'controls_data',
-                        columns = {
-                            str(switch): switch_states[switch] for switch in switch_states
-                        },
-                        at=datetime.now()
-                    )
+                    # sender.row(
+                    #     'controls_data',
+                    #     columns = {
+                    #         str(switch): switch_states[switch] for switch in switch_states
+                    #     },
+                    #     at=datetime.now()
+                    # )
 
                     # respond to COSMO
                     print("Sending ACK")
@@ -276,6 +276,9 @@ try:
 
 except KeyboardInterrupt:
     print("Server interrupted by user.")
+
+except (socket.error, ConnectionResetError, BrokenPipeError) as e:
+    print(f"Socket error or connection lost: {e}")
 
 finally:
     # Make sure all Relays are off, close the client socket and server socket
