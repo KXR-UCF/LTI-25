@@ -125,11 +125,11 @@ class ADS1256:
         self.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
         return data
     
-    def waitDRDY_fast(self):
-        """Quicker, but may return before DRDY"""
-        for i in range(10):
-            if (self.digital_read(self.drdy_pin) == 0):
-                return
+    # def waitDRDY_fast(self):
+    #     """Quicker, but may return before DRDY"""
+    #     for i in range(10):
+    #         if (self.digital_read(self.drdy_pin) == 0):
+    #             return
 
     def waitDRDY_safe(self):
         for i in range(100000):
@@ -229,20 +229,20 @@ class ADS1256:
             Value = self.read_ADC_Data()
         return Value
     
-    def getChannelValue_fast(self, Channel):
-        if(self.scan_mode == 0):# 0  Single-ended input  8 channel1 Differential input  4 channe
-            if(Channel>=8):
-                return 0
-            self.setChannel(Channel)
+    # def getChannelValue_fast(self, Channel):
+    #     if(self.scan_mode == 0):# 0  Single-ended input  8 channel1 Differential input  4 channe
+    #         if(Channel>=8):
+    #             return 0
+    #         self.setChannel(Channel)
            
-        else:
-            if(Channel>=4):
-                return 0
-            self.setDiffChannel(Channel)
+    #     else:
+    #         if(Channel>=4):
+    #             return 0
+    #         self.setDiffChannel(Channel)
 
-        time.sleep(0.00001)  # 10 microseconds for settling
+    #     time.sleep(0.00001)  # 10 microseconds for settling
 
-        return self.read_ADC_Data()
+    #     return self.read_ADC_Data()
         
     # returns all values by channel
     # automatically handles differential mode through getChannelValue
