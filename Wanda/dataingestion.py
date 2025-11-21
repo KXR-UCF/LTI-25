@@ -3,12 +3,30 @@
 from ADC import adcmanager
 
 import numpy as np
-from questdb.ingress import Sender, Protocol
+from questdb.ingress import Sender, Protocol, TimestampNanos
 from datetime import datetime
 
 import json
 import time
+import socket
+import subprocess
+import re
 
+def get_cpu_temp():
+        temp_output = subprocess.check_output(["vcgencmd", "measure_temp"]).decode()
+        match = re.search(r"temp=(\d+\.?\d*)'C", temp_output)
+        if match:
+            return float(match.group(1))
+        return None
+
+
+hostname = socket.gethostname()
+
+conf = (
+    'tcp::addr=localhost:9009;'  # Changed from http to tcp
+    'auto_flush=on;'
+    'auto_flush_rows=1;'
+)
 
 rows = [
     "cell1_force",
@@ -26,74 +44,92 @@ rows = [
     "nozzle_temp"
 ]
 
-conf = (
-    'http::addr=localhost:9000;'
-    'username=admin;'
-    'password=quest;'
-    'auto_flush=on;'
-    'auto_flush_rows=1;'
-    # 'auto_flush_interval=1000;'
-    )
-
-SWITCH_STATE_FILENAME = "switch_states.json"
-CONFIG_FILE_NAME = adcmanager.CONFIG_FILE_NAME
+# SWITCH_STATE_FILENAME = "switch_states.json"
+# CONFIG_FILE_NAME = adcmanager.CONFIG_FILE_NAME
 
 load_cell_group1 = adcmanager.LoadCellGroup()
 load_cell_group1.add_all_from_config()
-load_cell_group1.calibrate_tares(num_samples=100)
+load_cell_group1.calibrate_tares(num_samples=1000)
 load_cell_group1.print_load_cells_information()
 
 
-try:
+row_count = 0
+start_time = 0
+last_report_time = time.time()
 
+adc_times = []
+questdb_times = []
+loop_times = []
+
+try:
     with Sender.from_conf(conf) as sender: # Allows for QuestDB insertion
+
+        sender.row(table_name=hostname, at=datetime.now())
+
         # st = time.time()
         print("Connected to QuestDB")
-
-        # enable_fire = False
-        # while not enable_fire:
-        #     # read state file
-        #     try:
-        #         with open(SWITCH_STATE_FILENAME, 'r') as f:
-        #             switch_states = json.load(f)
-        #         # check enable fire state
-        #         if "enable_fire" in switch_states.keys():
-        #             enable_fire = switch_states["enable_fire"]
-        #         time.sleep(0.05)
-        #     except FileNotFoundError:
-        #         print("Waiting for switch state file")
-
+        start_time = time.time()
         print("Sending Data")
-        # st = time.time()
         while True:
+            loop_start = time.time()
+
+            # cpu_temp = get_cpu_temp()
 
             # get load cell values
+            adc_start = time.time()
             load_cell_group1_forces = load_cell_group1.get_all_forces()
             load_cell_group1_netForce = np.sum(load_cell_group1_forces)
+            adc_times.append(time.time() - adc_start)
 
             # send data and time to questDB
+            questdb_start = time.time()
             sender.row(
-                'telemetry_data',
+                table_name=hostname,
                 columns = {
                     'cell1_force': float(load_cell_group1_forces[0]),
                     'cell2_force': float(load_cell_group1_forces[1]),
                     'cell3_force': float(load_cell_group1_forces[2]),
-                    'net_force': float(load_cell_group1_netForce)
+                    'net_force': float(load_cell_group1_netForce),
+                    # 'temp' : float(cpu_temp)
                 },
-                at=datetime.now()
+                at=TimestampNanos.now()
             )
-            #
-            # if time.time() - st >= 7:
-            #     break
+            row_count += 1
+            questdb_times.append(time.time() - questdb_start)
 
-                # print('sent')
+            current_time = time.time()
+            if current_time - last_report_time > 1:
+                total_RPS = row_count / (current_time - start_time)
+                print(f"Rate: {total_RPS:.1f} RPS")
+                last_report_time = current_time
+            
+            loop_times.append(time.time() - loop_start)
+
 
 except KeyboardInterrupt:
     print("Program interuppted by user")
 
-# except Exception as e:
-#     print(f"Unexpected error: {e}")
-#     GPIO.cleanup()
-#     print("\r\nProgram end     ")
+except Exception as e:
+    print(f"Unexpected error: {e}")
+    import traceback
+    traceback.print_exc()
+
+finally:
+     total_elapsed = time.time() - start_time
+     if total_elapsed > 0 and row_count > 0:
+         final_RPS = row_count / total_elapsed
+         avg_adc = np.mean(adc_times)
+         avg_questdb = np.mean(questdb_times)
+         avg_loop = np.mean(loop_times)
+
+         print(f"{'='*60}")
+         print(f"{'Total Samples':<15} {row_count}")
+         print(f"{'Total Time':<15} {total_elapsed:.0f} s")
+         print(f"{'Total Rate:':<15} {final_RPS:.0f} RPS")
+         print(f"{'='*60}")
+         print(f"{'ADC overhead:':<15} {100*avg_adc/avg_loop:.0f}%")
+         print(f"{'QuestDB overhead:':<15} {100*avg_questdb/avg_loop:.0f}%")
+         print(f"{'My overhead:':<15} {100*(1-(avg_adc+avg_questdb)/avg_loop):.0f}%")
+         print(f"{'='*60}")
 
 
