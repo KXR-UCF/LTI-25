@@ -36,9 +36,15 @@ interface LiquidUIProps {
     switch4: boolean;
     switch5: boolean;
     switch6: boolean;
+    switch7: boolean;
+    switch8: boolean;
+    switch9: boolean;
+    switch10: boolean;
+    continuity: boolean;
     launchKey: boolean;
     abort: boolean;
   };
+  recordingState: 'idle' | 'recording' | 'stopped';
 }
 
 export default function LiquidUI({
@@ -46,12 +52,50 @@ export default function LiquidUI({
   connectionStatus,
   startTime,
   switchStates,
+  recordingState,
 }: LiquidUIProps) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
   // Peak value tracking
   const [peakNetForce, setPeakNetForce] = useState(0);
+
+  // Memoize line configurations to prevent chart recreation
+  const loadCellLines = useMemo(() => [
+    {
+      label: "Load Cell 1",
+      stroke: "#10B981",
+      width: 2,
+    },
+    {
+      label: "Load Cell 2",
+      stroke: "#F59E0B",
+      width: 2,
+    },
+    {
+      label: "Load Cell 3",
+      stroke: "#EF4444",
+      width: 2,
+    },
+    {
+      label: "Net Force",
+      stroke: "#3B82F6",
+      width: 2,
+    },
+  ], []);
+
+  const thermalLines = useMemo(() => [
+    {
+      label: "Chamber Temperature",
+      stroke: "#F97316",
+      width: 2,
+    },
+    {
+      label: "Nozzle Temperature",
+      stroke: "#DC2626",
+      width: 2,
+    },
+  ], []);
 
   // Convert telemetry data to uPlot format for load cells
   const loadCellData = useMemo((): uPlot.AlignedData => {
@@ -67,6 +111,12 @@ export default function LiquidUI({
 
     telemetryData.forEach((row) => {
       const time = new Date(row.timestamp).getTime() / 1000;
+
+      // If recording or stopped, only show data from START onward
+      if (recordingState !== 'idle' && time < startTime) {
+        return; // Skip this data point
+      }
+
       timestamps.push(time - startTime);
       cell1.push(row.cell1_force);
       cell2.push(row.cell2_force);
@@ -75,7 +125,7 @@ export default function LiquidUI({
     });
 
     return [timestamps, cell1, cell2, cell3, netForce];
-  }, [telemetryData, startTime]);
+  }, [telemetryData, startTime, recordingState]);
 
   // Convert telemetry data to uPlot format for thermal
   const thermalData = useMemo((): uPlot.AlignedData => {
@@ -89,13 +139,19 @@ export default function LiquidUI({
 
     telemetryData.forEach((row) => {
       const time = new Date(row.timestamp).getTime() / 1000;
+
+      // If recording or stopped, only show data from START onward
+      if (recordingState !== 'idle' && time < startTime) {
+        return; // Skip this data point
+      }
+
       timestamps.push(time - startTime);
       chamber.push(row.chamber_temp);
       nozzle.push(row.nozzle_temp);
     });
 
     return [timestamps, chamber, nozzle];
-  }, [telemetryData, startTime]);
+  }, [telemetryData, startTime, recordingState]);
 
   // Calculate latest data and update peaks incrementally
   const latestData = useMemo(() => {
@@ -149,51 +205,25 @@ export default function LiquidUI({
           chartClass={"load-cell-chart"}
           axisLabel={"Force (LBS)"}
           axisUnit={" LBS"}
-          lines={[
-            {
-              label: "Load Cell 1",
-              stroke: "#10B981",
-              width: 2,
-            },
-            {
-              label: "Load Cell 2",
-              stroke: "#F59E0B",
-              width: 2,
-            },
-            {
-              label: "Load Cell 3",
-              stroke: "#EF4444",
-              width: 2,
-            },
-            {
-              label: "Net Force",
-              stroke: "#3B82F6",
-              width: 2,
-            },
-          ]}
+          yMin={0}
+          yMax={1000}
+          recordingState={recordingState}
+          lines={loadCellLines}
           telemetryData={telemetryData}
           data={loadCellData}
         />
 
         {/* Thermal Chart */}
         <Chart
-          name={"THERMAL COUPLE TELEMETRY"}
+          name={"THERMOCOUPLE TELEMETRY"}
           isDark={isDark}
-          chartClass={"thermal-couple-chart"}
+          chartClass={"thermocouple-chart"}
           axisLabel={"Celcius (C)"}
           axisUnit={" C"}
-          lines={[
-            {
-              label: "Chamber Temperature",
-              stroke: "#F97316",
-              width: 2,
-            },
-            {
-              label: "Nozzle Temperature",
-              stroke: "#DC2626",
-              width: 2,
-            },
-          ]}
+          yMin={0}
+          yMax={3000}
+          recordingState={recordingState}
+          lines={thermalLines}
           telemetryData={telemetryData}
           data={thermalData}
         />
@@ -346,76 +376,200 @@ export default function LiquidUI({
               SYSTEM CONTROLS
             </CardTitle>
           </CardHeader>
-          <CardContent className="h-full flex flex-col gap-3">
-            <div className="grid grid-cols-2 gap-3 grid-rows-3 flex-1">
-              {[
-                { key: "switch1", label: "NOX FILL" },
-                { key: "switch2", label: "NOX VENT" },
-                { key: "switch3", label: "NOX RELIEF" },
-                { key: "switch4", label: "N2 FILL" },
-                { key: "switch5", label: "N2 VENT" },
-                { key: "switch6", label: "CONTINUITY" },
-              ].map(({ key, label }) => (
+          <CardContent className="h-full flex flex-col gap-4">
+            {/* NOX Systems */}
+            <div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-white/50 mb-2 uppercase tracking-wider">
+                NOX Systems
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { key: "switch1", label: "NOX FILL" },
+                  { key: "switch2", label: "NOX VENT" },
+                ].map(({ key, label }) => (
+                  <div
+                    key={key}
+                    className={`flex flex-col p-3 rounded-lg border transition-all duration-300 justify-center items-center space-y-2 ${
+                      switchStates[key as keyof typeof switchStates]
+                        ? "bg-green-100 dark:bg-green-900/30 border-green-500/50"
+                        : "bg-red-100 dark:bg-red-900/30 border-red-500/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                        {label}
+                      </p>
+                      <div
+                        className={`w-2.5 h-2.5 rounded-full ${
+                          switchStates[key as keyof typeof switchStates]
+                            ? "bg-green-500"
+                            : "bg-red-500"
+                        }`}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
+                      {switchStates[key as keyof typeof switchStates]
+                        ? "ACTIVE"
+                        : "INACTIVE"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 gap-3 mt-3">
                 <div
-                  key={key}
                   className={`flex flex-col p-3 rounded-lg border transition-all duration-300 justify-center items-center space-y-2 ${
-                    switchStates[key as keyof typeof switchStates]
+                    switchStates.switch3
                       ? "bg-green-100 dark:bg-green-900/30 border-green-500/50"
                       : "bg-red-100 dark:bg-red-900/30 border-red-500/50"
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <p className="text-xs font-semibold text-gray-900 dark:text-white">
-                      {label}
+                      NOX RELIEF
                     </p>
                     <div
                       className={`w-2.5 h-2.5 rounded-full ${
-                        switchStates[key as keyof typeof switchStates]
-                          ? "bg-green-500"
-                          : "bg-red-500"
+                        switchStates.switch3 ? "bg-green-500" : "bg-red-500"
                       }`}
                     ></div>
                   </div>
                   <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
-                    {switchStates[key as keyof typeof switchStates]
-                      ? "ACTIVE"
-                      : "INACTIVE"}
+                    {switchStates.switch3 ? "ACTIVE" : "INACTIVE"}
                   </p>
                 </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div
-                className={`flex flex-col p-3 rounded-lg border transition-all duration-300 justify-center items-center space-y-2 ${
-                  switchStates.launchKey
-                    ? "bg-green-100 dark:bg-green-900/30 border-green-500/50"
-                    : "bg-red-100 dark:bg-red-900/30 border-red-500/50"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <p className="text-xs font-semibold text-gray-900 dark:text-white">
-                    LAUNCH KEY
-                  </p>
-                  <div
-                    className={`w-2.5 h-2.5 rounded-full ${
-                      switchStates.launchKey ? "bg-green-500" : "bg-red-500"
-                    }`}
-                  ></div>
-                </div>
-                <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
-                  {switchStates.launchKey ? "ACTIVE" : "INACTIVE"}
-                </p>
               </div>
-              <div className="flex flex-col p-3 rounded-lg border transition-all duration-300 bg-red-100 dark:bg-red-900/30 border-red-500/50 justify-center items-center space-y-2">
-                <div className="flex items-center gap-2">
-                  <p className="text-xs font-semibold text-gray-900 dark:text-white">
-                    ABORT
+            </div>
+
+            {/* N2 Systems */}
+            <div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-white/50 mb-2 uppercase tracking-wider">
+                N2 Systems
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { key: "switch6", label: "N2 FILL" },
+                  { key: "switch7", label: "N2 VENT" },
+                ].map(({ key, label }) => (
+                  <div
+                    key={key}
+                    className={`flex flex-col p-3 rounded-lg border transition-all duration-300 justify-center items-center space-y-2 ${
+                      switchStates[key as keyof typeof switchStates]
+                        ? "bg-green-100 dark:bg-green-900/30 border-green-500/50"
+                        : "bg-red-100 dark:bg-red-900/30 border-red-500/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                        {label}
+                      </p>
+                      <div
+                        className={`w-2.5 h-2.5 rounded-full ${
+                          switchStates[key as keyof typeof switchStates]
+                            ? "bg-green-500"
+                            : "bg-red-500"
+                        }`}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
+                      {switchStates[key as keyof typeof switchStates]
+                        ? "ACTIVE"
+                        : "INACTIVE"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 gap-3 mt-3">
+                <div
+                  className={`flex flex-col p-3 rounded-lg border transition-all duration-300 justify-center items-center space-y-2 ${
+                    switchStates.switch8
+                      ? "bg-green-100 dark:bg-green-900/30 border-green-500/50"
+                      : "bg-red-100 dark:bg-red-900/30 border-red-500/50"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                      N2 RELIEF
+                    </p>
+                    <div
+                      className={`w-2.5 h-2.5 rounded-full ${
+                        switchStates.switch8 ? "bg-green-500" : "bg-red-500"
+                      }`}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
+                    {switchStates.switch8 ? "ACTIVE" : "INACTIVE"}
                   </p>
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
                 </div>
-                <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
-                  {switchStates.abort ? "ENGAGED" : "STANDBY"}
-                </p>
+              </div>
+            </div>
+
+            {/* Control Systems */}
+            <div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-white/50 mb-2 uppercase tracking-wider">
+                Control Systems
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div
+                  className={`flex flex-col p-3 rounded-lg border transition-all duration-300 justify-center items-center space-y-2 ${
+                    switchStates.continuity
+                      ? "bg-green-100 dark:bg-green-900/30 border-green-500/50"
+                      : "bg-red-100 dark:bg-red-900/30 border-red-500/50"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                      CONTINUITY
+                    </p>
+                    <div
+                      className={`w-2.5 h-2.5 rounded-full ${
+                        switchStates.continuity ? "bg-green-500" : "bg-red-500"
+                      }`}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
+                    {switchStates.continuity ? "ACTIVE" : "INACTIVE"}
+                  </p>
+                </div>
+                <div
+                  className={`flex flex-col p-3 rounded-lg border transition-all duration-300 justify-center items-center space-y-2 ${
+                    switchStates.launchKey
+                      ? "bg-green-100 dark:bg-green-900/30 border-green-500/50"
+                      : "bg-red-100 dark:bg-red-900/30 border-red-500/50"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                      LAUNCH KEY
+                    </p>
+                    <div
+                      className={`w-2.5 h-2.5 rounded-full ${
+                        switchStates.launchKey ? "bg-green-500" : "bg-red-500"
+                      }`}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
+                    {switchStates.launchKey ? "ACTIVE" : "INACTIVE"}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-3 mt-3">
+                <div className={`flex flex-col p-3 rounded-lg border transition-all duration-300 justify-center items-center space-y-2 ${
+                  switchStates.abort
+                    ? "bg-red-100 dark:bg-red-900/30 border-red-500/50 animate-pulse"
+                    : "bg-gray-100 dark:bg-gray-800/50 border-gray-300 dark:border-gray-700"
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                      ABORT SYSTEM
+                    </p>
+                    <div className={`w-2.5 h-2.5 rounded-full ${
+                      switchStates.abort ? "bg-red-500" : "bg-gray-500"
+                    }`}></div>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-white/70 font-medium">
+                    {switchStates.abort ? "ENGAGED" : "STANDBY"}
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>

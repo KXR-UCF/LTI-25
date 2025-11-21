@@ -42,6 +42,11 @@ interface InitialSwitchStatesMessage {
     switch4: boolean;
     switch5: boolean;
     switch6: boolean;
+    switch7: boolean;
+    switch8: boolean;
+    switch9: boolean;
+    switch10: boolean;
+    continuity: boolean;
     launchKey: boolean;
     abort: boolean;
   };
@@ -54,12 +59,15 @@ const RECONNECT_DELAY = 2000; // 2 seconds
 
 export default function Home() {
   const [telemetryData, setTelemetryData] = useState<TelemetryRow[]>([]);
+  const [frozenData, setFrozenData] = useState<TelemetryRow[]>([]);  // Data frozen when STOP is clicked
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  const [recordingState, setRecordingState] = useState<'idle' | 'recording' | 'stopped'>('idle');
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isUnmountedRef = useRef(false);
   const isFirstMessageRef = useRef(true);
   const startTimeRef = useRef<number | null>(null);  // Store the initial start time
+  const recordingStartTimeRef = useRef<number | null>(null);  // Timestamp when START was clicked
 
   // Switch states received from socket_client via server.js
   const [switchStates, setSwitchStates] = useState({
@@ -69,9 +77,44 @@ export default function Home() {
     switch4: false,
     switch5: false,
     switch6: false,
+    switch7: false,
+    switch8: false,
+    switch9: false,
+    switch10: false,
+    continuity: false,
     launchKey: false,
     abort: false
   });
+
+  // Handle START button click
+  const handleStart = () => {
+    if (telemetryData.length > 0) {
+      // Capture current latest timestamp as recording start
+      const latestTimestamp = new Date(telemetryData[telemetryData.length - 1].timestamp).getTime() / 1000;
+      recordingStartTimeRef.current = latestTimestamp;
+      startTimeRef.current = latestTimestamp;
+      setRecordingState('recording');
+      console.log('[Recording] 🔴 START - Recording started at', latestTimestamp);
+    }
+  };
+
+  // Handle STOP button click
+  const handleStop = () => {
+    // Freeze the current telemetry data
+    setFrozenData([...telemetryData]);
+    setRecordingState('stopped');
+    console.log('[Recording] ⏹️ STOP - Recording stopped. Frozen', telemetryData.length, 'data points');
+  };
+
+  // Handle RESET button click
+  const handleReset = () => {
+    recordingStartTimeRef.current = null;
+    startTimeRef.current = null;
+    isFirstMessageRef.current = true;
+    setFrozenData([]);
+    setRecordingState('idle');
+    console.log('[Recording] 🔄 RESET - Reset to idle mode');
+  };
 
   // WebSocket connection for live 60Hz telemetry updates
   useEffect(() => {
@@ -156,7 +199,7 @@ export default function Home() {
               const { switch: switchName, state } = message.data;
 
               // Validate switch name to prevent injection
-              const validSwitches = ['switch1', 'switch2', 'switch3', 'switch4', 'switch5', 'switch6', 'launchKey', 'abort'];
+              const validSwitches = ['switch1', 'switch2', 'switch3', 'switch4', 'switch5', 'switch6', 'switch7', 'switch8', 'switch9', 'switch10', 'continuity', 'launchKey', 'abort'];
               if (!validSwitches.includes(switchName)) {
                 console.warn(`[WebSocket] ⚠️  Invalid switch name: ${switchName}`);
                 return;
@@ -231,21 +274,53 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-50 via-gray-100 to-gray-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 text-gray-900 dark:text-white p-4">
       <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2 bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 shadow-sm">
-          <div className={`w-2 h-2 rounded-full ${
-            connectionStatus === 'connected' ? 'bg-green-500 animate-pulse' :
-            connectionStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' :
-            'bg-red-500'
-          }`}></div>
-          <span className="text-xs font-medium text-gray-700 dark:text-white/80">
-            {connectionStatus === 'connected' ? 'Connected' :
-             connectionStatus === 'connecting' ? 'Connecting...' :
-             'Disconnected'}
-          </span>
-          <div className="h-3 w-px bg-gray-300 dark:bg-gray-700"></div>
-          <span className="text-xs text-gray-500 dark:text-white/50">
-            {telemetryData.length} pts
-          </span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 shadow-sm">
+            <div className={`w-2 h-2 rounded-full ${
+              connectionStatus === 'connected' ? 'bg-green-500 animate-pulse' :
+              connectionStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' :
+              'bg-red-500'
+            }`}></div>
+            <span className="text-xs font-medium text-gray-700 dark:text-white/80">
+              {connectionStatus === 'connected' ? 'Connected' :
+               connectionStatus === 'connecting' ? 'Connecting...' :
+               'Disconnected'}
+            </span>
+            <div className="h-3 w-px bg-gray-300 dark:bg-gray-700"></div>
+            <span className="text-xs text-gray-500 dark:text-white/50">
+              {telemetryData.length} pts
+            </span>
+          </div>
+
+          {/* Recording Controls */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleStart}
+              disabled={recordingState !== 'idle' || telemetryData.length === 0}
+              className="px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg shadow-sm transition-colors"
+            >
+              START
+            </button>
+            <button
+              onClick={handleStop}
+              disabled={recordingState !== 'recording'}
+              className="px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg shadow-sm transition-colors"
+            >
+              STOP
+            </button>
+            <button
+              onClick={handleReset}
+              disabled={recordingState === 'idle'}
+              className="px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg shadow-sm transition-colors"
+            >
+              RESET
+            </button>
+            {recordingState !== 'idle' && (
+              <span className="text-xs font-medium px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-white/80">
+                {recordingState === 'recording' ? '🔴 Recording' : '⏹️ Stopped'}
+              </span>
+            )}
+          </div>
         </div>
         <ThemeToggle />
       </div>
@@ -255,10 +330,10 @@ export default function Home() {
           <TabsTrigger value="liquid">Liquid Motor</TabsTrigger>
         </TabsList>
         <TabsContent value="solid">
-          <SolidUI telemetryData={telemetryData} connectionStatus={connectionStatus} startTime={startTimeRef.current} switchStates={switchStates} />
+          <SolidUI telemetryData={recordingState === 'stopped' ? frozenData : telemetryData} connectionStatus={connectionStatus} startTime={startTimeRef.current} switchStates={switchStates} recordingState={recordingState} />
         </TabsContent>
         <TabsContent value="liquid">
-          <LiquidUI telemetryData={telemetryData} connectionStatus={connectionStatus} startTime={startTimeRef.current} switchStates={switchStates} />
+          <LiquidUI telemetryData={recordingState === 'stopped' ? frozenData : telemetryData} connectionStatus={connectionStatus} startTime={startTimeRef.current} switchStates={switchStates} recordingState={recordingState} />
         </TabsContent>
       </Tabs>
     </main>

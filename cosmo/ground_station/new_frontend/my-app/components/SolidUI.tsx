@@ -20,13 +20,14 @@ interface SolidUIProps {
   connectionStatus: 'disconnected' | 'connecting' | 'connected';
   startTime: number | null;
   switchStates: {
-    switch6: boolean;
+    continuity: boolean;
     launchKey: boolean;
     abort: boolean;
   };
+  recordingState: 'idle' | 'recording' | 'stopped';
 }
 
-export default function SolidUI({ telemetryData, connectionStatus, startTime, switchStates }: SolidUIProps) {
+export default function SolidUI({ telemetryData, connectionStatus, startTime, switchStates, recordingState }: SolidUIProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -48,6 +49,12 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
 
     telemetryData.forEach(row => {
       const time = new Date(row.timestamp).getTime() / 1000;
+
+      // If recording or stopped, only show data from START onward
+      if (recordingState !== 'idle' && time < startTime) {
+        return; // Skip this data point
+      }
+
       timestamps.push(time - startTime);
       cell1.push(row.cell1_force);
       cell2.push(row.cell2_force);
@@ -56,7 +63,7 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
     });
 
     return [timestamps, cell1, cell2, cell3, netForce];
-  }, [telemetryData, startTime]);
+  }, [telemetryData, startTime, recordingState]);
 
   // Convert telemetry data to uPlot format for pressure
   const pressureData = useMemo((): uPlot.AlignedData => {
@@ -69,12 +76,18 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
 
     telemetryData.forEach(row => {
       const time = new Date(row.timestamp).getTime() / 1000;
+
+      // If recording or stopped, only show data from START onward
+      if (recordingState !== 'idle' && time < startTime) {
+        return; // Skip this data point
+      }
+
       timestamps.push(time - startTime);
       pressure.push(row.pressure_pt1);
     });
 
     return [timestamps, pressure];
-  }, [telemetryData, startTime]);
+  }, [telemetryData, startTime, recordingState]);
 
   // Calculate latest data and update peaks incrementally
   const latestData = useMemo(() => {
@@ -119,16 +132,26 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
           y: true,
           uni: 50,
         },
-        sync: {
-          key: 'telemetry',
-        },
       },
       scales: {
-        x: {
-          time: false,
-        },
+        x: recordingState === 'stopped'
+          ? {
+              time: false,
+              // No range function - allows free panning/zooming
+            }
+          : {
+              time: false,
+              range: (u, min, max) => {
+                // 30-second sliding window for idle and recording
+                if (max <= 30) {
+                  return [0, 30];
+                } else {
+                  return [max - 30, max];
+                }
+              },
+            },
         y: {
-          auto: true,
+          range: [0, 5000],
         },
       },
     axes: [
@@ -136,6 +159,17 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
         label: 'Runtime (s)',
         stroke: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.6)',
         grid: { stroke: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.1)', width: 1 },
+        splits: (u) => {
+          const min = Math.floor(u.scales.x.min || 0);
+          const max = Math.ceil(u.scales.x.max || 30);
+
+          // Always use 1-second intervals
+          const splits = [];
+          for (let i = min; i <= max; i += 1) {
+            splits.push(i);
+          }
+          return splits;
+        },
       },
       {
         label: 'Force (N)',
@@ -172,7 +206,7 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
         show: true,
       },
     };
-  }, [isDark]);
+  }, [isDark, recordingState]);
 
   // Pressure chart options
   const pressureOptions = useMemo((): uPlot.Options => {
@@ -186,16 +220,26 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
           y: true,
           uni: 50,
         },
-        sync: {
-          key: 'telemetry',
-        },
       },
       scales: {
-        x: {
-          time: false,
-        },
+        x: recordingState === 'stopped'
+          ? {
+              time: false,
+              // No range function - allows free panning/zooming
+            }
+          : {
+              time: false,
+              range: (u, min, max) => {
+                // 30-second sliding window for idle and recording
+                if (max <= 30) {
+                  return [0, 30];
+                } else {
+                  return [max - 30, max];
+                }
+              },
+            },
         y: {
-          auto: true,
+          range: [0, 1000],
         },
       },
     axes: [
@@ -203,6 +247,17 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
         label: 'Runtime (s)',
         stroke: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.6)',
         grid: { stroke: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.1)', width: 1 },
+        splits: (u) => {
+          const min = Math.floor(u.scales.x.min || 0);
+          const max = Math.ceil(u.scales.x.max || 30);
+
+          // Always use 1-second intervals
+          const splits = [];
+          for (let i = min; i <= max; i += 1) {
+            splits.push(i);
+          }
+          return splits;
+        },
       },
       {
         label: 'Pressure (PSI)',
@@ -224,7 +279,7 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
         show: true,
       },
     };
-  }, [isDark]);
+  }, [isDark, recordingState]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -360,7 +415,7 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
             <div className="grid grid-cols-2 gap-3 flex-1">
               <div
                 className={`flex flex-col p-4 rounded-lg border transition-all duration-300 justify-center items-center space-y-3 ${
-                  switchStates.switch6
+                  switchStates.continuity
                     ? 'bg-green-100 dark:bg-green-900/30 border-green-500/50'
                     : 'bg-red-100 dark:bg-red-900/30 border-red-500/50'
                 }`}
@@ -368,11 +423,11 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
                 <div className="flex items-center gap-2">
                   <p className="text-base font-semibold text-gray-900 dark:text-white">CONTINUITY</p>
                   <div className={`w-3 h-3 rounded-full ${
-                    switchStates.switch6 ? 'bg-green-500' : 'bg-red-500'
+                    switchStates.continuity ? 'bg-green-500' : 'bg-red-500'
                   }`}></div>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-white/70 font-medium">
-                  {switchStates.switch6 ? 'ACTIVE' : 'INACTIVE'}
+                  {switchStates.continuity ? 'ACTIVE' : 'INACTIVE'}
                 </p>
               </div>
               <div
@@ -394,11 +449,17 @@ export default function SolidUI({ telemetryData, connectionStatus, startTime, sw
               </div>
             </div>
             <div
-              className="flex flex-col p-4 rounded-lg border transition-all duration-300 bg-red-100 dark:bg-red-900/30 border-red-500/50 justify-center items-center space-y-3 flex-1"
+              className={`flex flex-col p-4 rounded-lg border transition-all duration-300 justify-center items-center space-y-3 flex-1 ${
+                switchStates.abort
+                  ? 'bg-red-100 dark:bg-red-900/30 border-red-500/50 animate-pulse'
+                  : 'bg-gray-100 dark:bg-gray-800/50 border-gray-300 dark:border-gray-700'
+              }`}
             >
               <div className="flex items-center gap-2">
                 <p className="text-base font-semibold text-gray-900 dark:text-white">ABORT SYSTEM</p>
-                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <div className={`w-3 h-3 rounded-full ${
+                  switchStates.abort ? 'bg-red-500' : 'bg-gray-500'
+                }`}></div>
               </div>
               <p className="text-sm text-gray-600 dark:text-white/70 font-medium">
                 {switchStates.abort ? 'ENGAGED' : 'STANDBY'}
