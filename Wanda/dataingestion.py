@@ -26,14 +26,20 @@ rows = [
     "nozzle_temp"
 ]
 
+# conf = (
+#     'http::addr=localhost:9000;'
+#     'username=admin;'
+#     'password=quest;'
+#     'auto_flush=on;'
+#     'auto_flush_rows=1;'
+#     # 'auto_flush_interval=1000;'
+#     )
+
 conf = (
-    'http::addr=localhost:9000;'
-    'username=admin;'
-    'password=quest;'
+    'tcp::addr=localhost:9009;'  # Changed from http to tcp
     'auto_flush=on;'
     'auto_flush_rows=1;'
-    # 'auto_flush_interval=1000;'
-    )
+)
 
 SWITCH_STATE_FILENAME = "switch_states.json"
 CONFIG_FILE_NAME = adcmanager.CONFIG_FILE_NAME
