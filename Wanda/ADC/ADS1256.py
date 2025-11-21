@@ -96,7 +96,6 @@ class ADS1256:
         GPIO.setup(self.rst_pin, GPIO.OUT)
         GPIO.setup(self.cs_pin, GPIO.OUT)
         GPIO.setup(self.drdy_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        SPI.max_speed_hz = 20000
         SPI.mode = 0b01
         return 0
 
@@ -129,15 +128,14 @@ class ADS1256:
     def waitDRDY_fast(self):
         """Quicker, but may return before DRDY"""
         for i in range(10):
-            if(self.digital_read(self.drdy_pin) == 0):
+            if (self.digital_read(self.drdy_pin) == 0):
                 return
 
     def waitDRDY_safe(self):
-        for i in range(0,400000,1):
+        for i in range(100000):
             if(self.digital_read(self.drdy_pin) == 0):
-                break
-        if(i >= 400000):
-            print ("DRDY Time Out ...\r\n")
+                return
+        print ("DRDY Time Out ...\r\n")
         
         
     def readChipID(self):
@@ -158,7 +156,6 @@ class ADS1256:
         self.digital_write(self.cs_pin, GPIO.LOW)#cs  0
         self.spi_writebyte([CMD['CMD_WREG'] | 0, 0x03])
         self.spi_writebyte(buf)
-        
         self.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
         self.delay_ms(1) 
 
@@ -219,21 +216,16 @@ class ADS1256:
         if(self.scan_mode == 0):# 0  Single-ended input  8 channel1 Differential input  4 channe
             if(Channel>=8):
                 return 0
-            print(self.scan_mode)
             self.setChannel(Channel)
             self.writeCmd(CMD['CMD_SYNC'])
-            # self.delay_ms(10)
             self.writeCmd(CMD['CMD_WAKEUP'])
-            # self.delay_ms(200)
             Value = self.read_ADC_Data()
         else:
             if(Channel>=4):
                 return 0
             self.setDiffChannel(Channel)
             self.writeCmd(CMD['CMD_SYNC'])
-            # self.delay_ms(10) 
             self.writeCmd(CMD['CMD_WAKEUP'])
-            # self.delay_ms(10) 
             Value = self.read_ADC_Data()
         return Value
     
