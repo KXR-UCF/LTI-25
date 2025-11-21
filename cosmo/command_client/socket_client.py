@@ -136,6 +136,7 @@ if pipe:
     pipe = resend_all_states(pipe)
 
 # set socket timeout
+s.settimeout(0.5)
 try:
     while True:
         # receive data from the server and decoding to get the string.
@@ -158,7 +159,6 @@ try:
             except BlockingIOError:
                 pass
             s.setblocking(True)
-            s.settimeout(0.5)
 
             # if no response after 5 attempts give up
             if attempts > 5:
@@ -173,7 +173,9 @@ try:
             try:
                 response_msg = s.recv(1024)
                 response_msg = response_msg.decode().strip()
-                responses = response_msg.rstrip(';').split(';')
+                responses = response_msg.
+                
+                strip(';').split(';')
                 for response in responses:
 
                     response_ack = (response == f"ACK: {msg.strip()}")
