@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-QuestDB Telemetry Data Ingestion Script (Two-Table Architecture)
-Ingests telemetry data at 60 samples per second into wanda1 and wanda2 tables.
+QuestDB Telemetry Data Ingestion Script
+Ingests telemetry data at 60 samples per second for a specified duration.
 """
 
 import time
@@ -10,24 +10,15 @@ import math
 from datetime import datetime
 from questdb.ingress import Sender
 import argparse
-import psycopg2
 
 
 # QuestDB connection configuration
-QUESTDB_HTTP_CONF = (
+QUESTDB_CONF = (
     'http::addr=localhost:9000;'
     'username=admin;'
     'password=quest;'
     'auto_flush=off;'  # Manual flush for better control at 60Hz
 )
-
-QUESTDB_PG_CONF = {
-    'host': 'localhost',
-    'port': 8812,
-    'user': 'admin',
-    'password': 'quest',
-    'database': 'qdb'
-}
 
 # Target sampling rate
 SAMPLES_PER_SECOND = 60
@@ -49,90 +40,6 @@ MAX_NOZZLE_TEMP = 1500.0   # Peak nozzle temp in °C
 FORCE_NOISE = 5.0        # ±5N
 PRESSURE_NOISE = 20.0    # ±20 PSI
 TEMP_NOISE = 10.0        # ±10°C
-
-
-def setup_tables():
-    """
-    Check if wanda1 and wanda2 tables exist.
-    If they don't exist, create them.
-    If they exist, truncate them.
-    """
-    print("Setting up database tables...\n")
-
-    conn = psycopg2.connect(**QUESTDB_PG_CONF)
-    cursor = conn.cursor()
-
-    try:
-        # Check if wanda1 exists
-        cursor.execute("""
-            SELECT table_name
-            FROM tables()
-            WHERE table_name = 'wanda1'
-        """)
-        wanda1_exists = cursor.fetchone() is not None
-
-        # Check if wanda2 exists
-        cursor.execute("""
-            SELECT table_name
-            FROM tables()
-            WHERE table_name = 'wanda2'
-        """)
-        wanda2_exists = cursor.fetchone() is not None
-
-        # Handle wanda1
-        if wanda1_exists:
-            print("✓ Table 'wanda1' exists - truncating...")
-            cursor.execute("TRUNCATE TABLE wanda1")
-            conn.commit()
-        else:
-            print("✗ Table 'wanda1' not found - creating...")
-            cursor.execute("""
-                CREATE TABLE wanda1 (
-                    timestamp TIMESTAMP,
-                    pt01 DOUBLE,
-                    pt02 DOUBLE,
-                    pt03 DOUBLE,
-                    pt04 DOUBLE,
-                    pt05 DOUBLE,
-                    pt06 DOUBLE,
-                    pt07 DOUBLE,
-                    pt08 DOUBLE,
-                    continuity_raw DOUBLE
-                ) TIMESTAMP(timestamp) PARTITION BY DAY
-            """)
-            conn.commit()
-            print("✓ Table 'wanda1' created")
-
-        # Handle wanda2
-        if wanda2_exists:
-            print("✓ Table 'wanda2' exists - truncating...")
-            cursor.execute("TRUNCATE TABLE wanda2")
-            conn.commit()
-        else:
-            print("✗ Table 'wanda2' not found - creating...")
-            cursor.execute("""
-                CREATE TABLE wanda2 (
-                    timestamp TIMESTAMP,
-                    lc1 DOUBLE,
-                    lc2 DOUBLE,
-                    lc3 DOUBLE,
-                    lc4 DOUBLE,
-                    lc_net_force DOUBLE,
-                    tc1 DOUBLE,
-                    tc2 DOUBLE
-                ) TIMESTAMP(timestamp) PARTITION BY DAY
-            """)
-            conn.commit()
-            print("✓ Table 'wanda2' created")
-
-        print("\n✅ Database setup complete!\n")
-
-    except Exception as e:
-        print(f"❌ Error setting up tables: {e}")
-        raise
-    finally:
-        cursor.close()
-        conn.close()
 
 
 def rocket_burn_profile(t, duration_seconds):
@@ -179,10 +86,8 @@ def rocket_burn_profile(t, duration_seconds):
 
 def generate_sample_data(elapsed_time, duration_seconds):
     """
-    Generate realistic rocket motor telemetry data for wanda1 and wanda2 tables.
+    Generate realistic rocket motor telemetry data.
     Simulates a complete burn cycle with ignition, steady burn, and shutdown.
-
-    Returns tuple: (wanda1_data, wanda2_data)
     """
     # Get burn profile intensity (0 to 1)
     intensity = rocket_burn_profile(elapsed_time, duration_seconds)
@@ -191,72 +96,61 @@ def generate_sample_data(elapsed_time, duration_seconds):
     def add_noise(value, noise_level):
         return max(0, value + random.uniform(-noise_level, noise_level))
 
-    # === WANDA2: THRUST / LOAD CELLS ===
-    # Individual thrust sensors (4 sensors)
-    lc1 = add_noise(200 - (elapsed_time / TOTAL_BURN_TIME) * 100, FORCE_NOISE)  # Nox Tank Weight
-    lc2 = add_noise(MAX_THRUST * intensity * 0.33, FORCE_NOISE)  # Thrust 1
-    lc3 = add_noise(MAX_THRUST * intensity * 0.35, FORCE_NOISE)  # Thrust 2
-    lc4 = add_noise(MAX_THRUST * intensity * 0.32, FORCE_NOISE)  # Thrust 3
-    lc_net_force = lc2 + lc3 + lc4
+    # Load cells: Simulate 3 cells measuring thrust
+    # Cells have slight variations due to mounting position
+    cell1_base = MAX_THRUST * intensity * 0.33
+    cell2_base = MAX_THRUST * intensity * 0.35
+    cell3_base = MAX_THRUST * intensity * 0.32
 
-    # === WANDA1: PRESSURE TRANSDUCERS ===
-    # Main chamber pressure correlates with thrust
+    cell1_force = add_noise(cell1_base, FORCE_NOISE)
+    cell2_force = add_noise(cell2_base, FORCE_NOISE)
+    cell3_force = add_noise(cell3_base, FORCE_NOISE)
+    net_force = cell1_force + cell2_force + cell3_force
+
+    # Chamber pressure: Correlates with thrust
     chamber_pressure = add_noise(MAX_PRESSURE * intensity, PRESSURE_NOISE)
 
-    pt01 = add_noise(1800 * intensity, PRESSURE_NOISE * 0.8)  # N2 Inlet
-    pt02 = add_noise(1200 * intensity, PRESSURE_NOISE * 0.7)  # NOX Inlet
-    pt03 = add_noise(800 * intensity, PRESSURE_NOISE * 0.6)   # Dome Reg
-    pt04 = add_noise(3000 * intensity, PRESSURE_NOISE * 0.9)  # N2 Tank
-    pt05 = add_noise(900 * intensity, PRESSURE_NOISE * 0.6)   # Fuel Tank
-    pt06 = chamber_pressure                                    # Chamber A
-    pt07 = add_noise(chamber_pressure * 0.98, PRESSURE_NOISE * 0.5)  # Chamber B
-    pt08 = add_noise(850 * intensity, PRESSURE_NOISE * 0.6)   # Fuel Feed
+    # Multiple pressure transducers with slight offsets
+    pressure_pt1 = chamber_pressure
+    pressure_pt2 = add_noise(chamber_pressure * 0.95, PRESSURE_NOISE * 0.5)
+    pressure_pt3 = add_noise(chamber_pressure * 0.98, PRESSURE_NOISE * 0.5)
+    pressure_pt4 = add_noise(chamber_pressure * 0.4, PRESSURE_NOISE * 0.3)  # Downstream
+    pressure_pt5 = add_noise(chamber_pressure * 0.2, PRESSURE_NOISE * 0.2)  # Nozzle throat
+    pressure_pt6 = add_noise(chamber_pressure * 0.05, PRESSURE_NOISE * 0.1) # Ambient
 
-    # Continuity sensor (dummy value for now)
-    continuity_raw = 5.0 if intensity > 0.1 else 0.0
-
-    # === WANDA2: TEMPERATURES ===
-    # Temperature lags behind thrust due to thermal mass
+    # Temperatures: Lag behind thrust due to thermal mass
+    # Temperature rises slower than thrust
     temp_lag_factor = min(1.0, elapsed_time / 5.0)  # Takes 5s to reach full temp
+    chamber_temp = add_noise(MAX_CHAMBER_TEMP * intensity * temp_lag_factor, TEMP_NOISE)
+    nozzle_temp = add_noise(MAX_NOZZLE_TEMP * intensity * temp_lag_factor, TEMP_NOISE)
 
-    # TC-1: Nitrous feed temperature (cryogenic when flowing)
+    # Weight (propellant consumption): Decreases over time during burn
     if intensity > 0.1:
-        tc1 = add_noise(-20 + (30 * intensity * temp_lag_factor), TEMP_NOISE * 0.5)
+        consumed_weight = (elapsed_time / TOTAL_BURN_TIME) * 100  # 100g consumed
     else:
-        tc1 = add_noise(20, TEMP_NOISE * 0.2)  # Ambient when not flowing
+        consumed_weight = 0
+    weight_load_cell = max(0, 500 - consumed_weight)
 
-    # TC-2: Chamber temperature
-    tc2 = add_noise(MAX_CHAMBER_TEMP * intensity * temp_lag_factor, TEMP_NOISE)
-
-    # Prepare data for each table
-    wanda1_data = {
-        'pt01': round(pt01, 2),
-        'pt02': round(pt02, 2),
-        'pt03': round(pt03, 2),
-        'pt04': round(pt04, 2),
-        'pt05': round(pt05, 2),
-        'pt06': round(pt06, 2),
-        'pt07': round(pt07, 2),
-        'pt08': round(pt08, 2),
-        'continuity_raw': round(continuity_raw, 2)
+    return {
+        'cell1_force': round(cell1_force, 2),
+        'cell2_force': round(cell2_force, 2),
+        'cell3_force': round(cell3_force, 2),
+        'net_force': round(net_force, 2),
+        'pressure_pt1': round(pressure_pt1, 2),
+        'pressure_pt2': round(pressure_pt2, 2),
+        'pressure_pt3': round(pressure_pt3, 2),
+        'pressure_pt4': round(pressure_pt4, 2),
+        'pressure_pt5': round(pressure_pt5, 2),
+        'pressure_pt6': round(pressure_pt6, 2),
+        'weight_load_cell': round(weight_load_cell, 2),
+        'chamber_temp': round(chamber_temp, 2),
+        'nozzle_temp': round(nozzle_temp, 2)
     }
-
-    wanda2_data = {
-        'lc1': round(lc1, 2),
-        'lc2': round(lc2, 2),
-        'lc3': round(lc3, 2),
-        'lc4': round(lc4, 2),
-        'lc_net_force': round(lc_net_force, 2),
-        'tc1': round(tc1, 2),
-        'tc2': round(tc2, 2)
-    }
-
-    return wanda1_data, wanda2_data
 
 
 def ingest_telemetry(duration_seconds, batch_size=10):
     """
-    Ingest telemetry data at 60 samples per second into wanda1 and wanda2 tables.
+    Ingest telemetry data at 60 samples per second.
 
     Args:
         duration_seconds: How long to run the ingestion (seconds)
@@ -273,7 +167,7 @@ def ingest_telemetry(duration_seconds, batch_size=10):
     print(f"  - Sample interval: {SAMPLE_INTERVAL*1000:.2f}ms\n")
 
     try:
-        with Sender.from_conf(QUESTDB_HTTP_CONF) as sender:
+        with Sender.from_conf(QUESTDB_CONF) as sender:
             print("Connected to QuestDB\n")
 
             start_time = time.time()
@@ -284,24 +178,13 @@ def ingest_telemetry(duration_seconds, batch_size=10):
                 # Calculate elapsed time for this sample
                 elapsed_time = samples_sent / SAMPLES_PER_SECOND
 
-                # Generate sample data for both tables
-                wanda1_data, wanda2_data = generate_sample_data(elapsed_time, duration_seconds)
+                # Generate and send sample
+                data = generate_sample_data(elapsed_time, duration_seconds)
 
-                # Use same timestamp for both tables
-                timestamp = datetime.now()
-
-                # Send to wanda1
                 sender.row(
-                    'wanda1',
-                    columns=wanda1_data,
-                    at=timestamp
-                )
-
-                # Send to wanda2
-                sender.row(
-                    'wanda2',
-                    columns=wanda2_data,
-                    at=timestamp
+                    'telemetry_data',
+                    columns=data,
+                    at=datetime.now()
                 )
 
                 samples_sent += 1
@@ -341,7 +224,7 @@ def ingest_telemetry(duration_seconds, batch_size=10):
 
             print(f"\n{'='*60}")
             print(f"Ingestion Complete!")
-            print(f"  - Total samples sent: {samples_sent} (to BOTH tables)")
+            print(f"  - Total samples sent: {samples_sent}")
             print(f"  - Total time: {total_time:.2f} seconds")
             print(f"  - Actual rate: {actual_rate:.2f} samples/second")
             print(f"  - Target rate: {SAMPLES_PER_SECOND} samples/second")
@@ -357,7 +240,7 @@ def ingest_telemetry(duration_seconds, batch_size=10):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Ingest telemetry data into QuestDB wanda1/wanda2 tables at 60 samples per second'
+        description='Ingest telemetry data into QuestDB at 60 samples per second'
     )
     parser.add_argument(
         'duration',
@@ -377,10 +260,6 @@ def main():
         print("Error: Duration must be positive")
         return
 
-    # Setup tables (create if not exist, truncate if exist)
-    setup_tables()
-
-    # Start ingestion
     ingest_telemetry(args.duration, args.batch_size)
 
 
