@@ -8,8 +8,11 @@ import sys
 from collections import deque
 import time
 
-DIFFERENTIAL = True
+DIFFERENTIAL = False
 ADC_ID = 1
+
+VREF = 2.5
+PGA = 1
 
 # Pin definition (GPIO)    
 if ADC_ID == 1:
@@ -22,13 +25,13 @@ else:
     DRDY_PIN = 23
 
 scale_factors = [1, 1, 1, 1, 1, 1, 1, 1]
-history = [deque(maxlen=1000) for _ in range(8)]
+history = [deque(maxlen=500) for _ in range(8)]
 loop_time = deque(maxlen=10)
 
 try:
     ADC = ADS1256.ADS1256(RST_PIN, CS_PIN, DRDY_PIN)
     ADC.init()
-    ADC.configADC(6,0xF0)
+    ADC.configADC(1,0xF0)
     
     if not DIFFERENTIAL:
         ADC.setMode(0)
@@ -36,7 +39,8 @@ try:
     while True:
         start_time = time.time()
         ADC_Value = ADC.getAll()
-        voltages = np.array(ADC_Value) * 5.0 / 0x7fffff
+        # voltages = np.array(ADC_Value) * 5.0 / 0x7fffff
+        voltages = np.array(ADC_Value) * (2*VREF/PGA) / 0x7fffff
 
         sys.stdout.write(f"\033[1;1H")
         sys.stdout.write("\033[K")

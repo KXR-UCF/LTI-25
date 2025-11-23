@@ -125,11 +125,11 @@ class ADS1256:
         self.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
         return data
     
-    # def waitDRDY_fast(self):
-    #     """Quicker, but may return before DRDY"""
-    #     for i in range(10):
-    #         if (self.digital_read(self.drdy_pin) == 0):
-    #             return
+    def waitDRDY_fast(self):
+        """Quicker, but may return before DRDY"""
+        for i in range(10):
+            if (self.digital_read(self.drdy_pin) == 0):
+                return
 
     def waitDRDY(self):
         for i in range(100000):
@@ -199,7 +199,7 @@ class ADS1256:
         return 0
         
     def read_ADC_Data(self):
-        self.waitDRDY()
+        self.waitDRDY_fast()
         self.digital_write(self.cs_pin, GPIO.LOW)#cs  0
         self.spi_writebyte([CMD['CMD_RDATA']])
         buf = self.spi_readbytes(3)
@@ -252,10 +252,11 @@ class ADS1256:
             ADC_Value[i] = self.getChannelValue(i)
         return ADC_Value
     
-    def getAll_fast(self):
-        ADC_Value = [0,0,0,0,0,0,0,0]
-        for i in range(0,8,1):
-            ADC_Value[i] = self.getChannelValue_fast(i)
-        return ADC_Value
+    # def getAll_fast(self):
+    #     ADC_Value = [0,0,0,0,0,0,0,0]
+    #     for i in range(0,8,1):
+    #         ADC_Value[i] = self.getChannelValue_fast(i)
+    #     return ADC_Value
+
 ### END OF FILE ###
 
