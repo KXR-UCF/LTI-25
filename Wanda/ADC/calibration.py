@@ -38,14 +38,15 @@ try:
         ADC_Value = ADC.getAll()
         voltages = np.array(ADC_Value) * 5.0 / 0x7fffff
         
-        for i, voltage in voltages:
+        for i, voltage in enumerate(voltages):
             history[i].append(voltage)
             avg_voltage = np.mean(history[i])
 
             sys.stdout.write(f"\033[{i+2};1H")
             sys.stdout.write("\033[K")
             sys.stdout.write(f"{i:<10}")
-            print("0 ADC = %lf" % (voltage), end='\t')
+
+        sys.stdout.flush()
 
 
 except Exception as e:
