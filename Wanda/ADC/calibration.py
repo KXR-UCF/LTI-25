@@ -24,8 +24,9 @@ else:
     CS_PIN   = 7
     DRDY_PIN = 23
 
-scale_factors = [1, 1, 1, 1, 1, 1, 1, 1]
-history = [deque(maxlen=500) for _ in range(8)]
+scale_factors = [3776.272949, 6498.5830157, 1, 1, 1, 1, 1, 1]
+bias_factors = [-1562.725464, -2653.93335, 0, 0, 0, 0, 0, 0]
+history = [deque(maxlen=50) for _ in range(8)]
 loop_time = deque(maxlen=10)
 
 try:
@@ -42,24 +43,27 @@ try:
         # voltages = np.array(ADC_Value) * 5.0 / 0x7fffff
         voltages = np.array(ADC_Value) * (2*VREF/PGA) / 0x7fffff
 
-        sys.stdout.write(f"\033[1;1H")
-        sys.stdout.write("\033[K")
-        sys.stdout.write(f"{'SPS:':<10} {len(loop_time)/np.sum(loop_time):.2f}")
-
-        sys.stdout.write(f"\033[2;1H")
-        sys.stdout.write("\033[K")
-        sys.stdout.write(f"{f'Channel':<10} {'Voltage'}")
+        # sys.stdout.write(f"\033[1;1H")
+        # sys.stdout.write("\033[K")
+        # sys.stdout.write(f"{'SPS:':<10} {len(loop_time)/np.sum(loop_time):.2f}")
+        #
+        # sys.stdout.write(f"\033[2;1H")
+        # sys.stdout.write("\033[K")
+        # sys.stdout.write(f"{f'Channel':<10} {'Voltage'}")
+        output_line = ''
         for i, voltage in enumerate(voltages):
+            pressure = (voltage * scale_factors[i]) + bias_factors[i]
             if DIFFERENTIAL and i > 3:
                 break
-            history[i].append(voltage)
-            avg_voltage = np.mean(history[i])
-            output_line = f"{i:<10} {avg_voltage:.6f}"
-
-            sys.stdout.write(f"\033[{i+3};1H")
-            sys.stdout.write("\033[K")
-            sys.stdout.write(output_line)
-        sys.stdout.flush()
+            history[i].append(pressure)
+            avg_pressure = np.mean(history[i])
+            output_line = output_line + f" {i}: {avg_pressure:<10.6f}"
+        print(output_line)
+        #     sys.stdout.write(f"\033[{i+3};1H")
+        #     sys.stdout.write("\033[K")
+        #     sys.stdout.write(output_line)
+        # sys.stdout.flush()
+        # time.sleep(0.1)
 
         loop_time.append(time.time() - start_time)
 
