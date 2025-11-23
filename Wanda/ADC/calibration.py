@@ -31,7 +31,7 @@ loop_time = deque(maxlen=10)
 try:
     ADC = ADS1256.ADS1256(RST_PIN, CS_PIN, DRDY_PIN)
     ADC.init()
-    ADC.configADC(1,0xF0)
+    ADC.configADC(0,0xF0)
     
     if not DIFFERENTIAL:
         ADC.setMode(0)
