@@ -199,7 +199,7 @@ class ADS1256:
         return 0
         
     def read_ADC_Data(self):
-        self.waitDRDY_fast()
+        self.waitDRDY()
         self.digital_write(self.cs_pin, GPIO.LOW)#cs  0
         self.spi_writebyte([CMD['CMD_RDATA']])
         buf = self.spi_readbytes(3)
