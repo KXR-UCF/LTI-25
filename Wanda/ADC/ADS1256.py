@@ -63,7 +63,7 @@ CMD = {'CMD_WAKEUP' : 0x00,     # Completes SYNC and Exits Standby Mode 0000  00
       }
 
 SPI = spidev.SpiDev(0, 0)
-SPI.max_speed_hz = 1000000  # 1 MHz
+# SPI.max_speed_hz = 1000000  # 1 MHz
 
 
 class ADS1256:
@@ -125,11 +125,11 @@ class ADS1256:
         self.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
         return data
     
-    def waitDRDY_fast(self):
-        """Quicker, but may return before DRDY"""
-        for i in range(10):
-            if (self.digital_read(self.drdy_pin) == 0):
-                return
+    # def waitDRDY_fast(self):
+    #     """Quicker, but may return before DRDY"""
+    #     for i in range(10):
+    #         if (self.digital_read(self.drdy_pin) == 0):
+    #             return
 
     def waitDRDY(self):
         for i in range(100000):
@@ -199,7 +199,7 @@ class ADS1256:
         return 0
         
     def read_ADC_Data(self):
-        self.waitDRDY_fast()
+        self.waitDRDY()
         self.digital_write(self.cs_pin, GPIO.LOW)#cs  0
         self.spi_writebyte([CMD['CMD_RDATA']])
         buf = self.spi_readbytes(3)
