@@ -44,7 +44,7 @@ try:
 
             sys.stdout.write(f"\033[{i+2};1H")
             sys.stdout.write("\033[K")
-            sys.stdout.write(f"{i:<10} {avg_voltage:.6f}")
+            sys.stdout.write(f"{i:<10} {avg_voltage:>10.6f}")
 
         sys.stdout.flush()
 
