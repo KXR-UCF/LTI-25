@@ -6,6 +6,7 @@ import RPi.GPIO as GPIO
 import ADS1256
 import sys
 from collections import deque
+import time
 
 DIFFERENTIAL = True
 ADC_ID = 1
@@ -22,12 +23,13 @@ else:
 
 scale_factors = [1, 1, 1, 1, 1, 1, 1, 1]
 history = [deque(maxlen=1000) for _ in range(8)]
+loop_time = deque(maxlen=10)
 
 try:
     ADC = ADS1256.ADS1256(RST_PIN, CS_PIN, DRDY_PIN)
     ADC.init()
     ADC.configADC(6,0xF0)
-        
+    
     if not DIFFERENTIAL:
         ADC.setMode(0)
 
@@ -35,18 +37,26 @@ try:
     sys.stdout.write("\033[K")
     sys.stdout.write(f"{f'Channel':<10} {'Voltage'}")
     while True:
+        start_time = time.time()
         ADC_Value = ADC.getAll()
         voltages = np.array(ADC_Value) * 5.0 / 0x7fffff
         
+        sys.stdout.write(f"\033[2;1H")
+        sys.stdout.write("\033[K")
+        sys.stdout.write(f"SPS: {len(loop_time)/np.sum(loop_time):.2f}")
         for i, voltage in enumerate(voltages):
+            if DIFFERENTIAL and i > 3:
+                break
             history[i].append(voltage)
             avg_voltage = np.mean(history[i])
             output_line = f"{i:<10} {avg_voltage:.6f}"
 
-            sys.stdout.write(f"\033[{i+2};1H")
+            sys.stdout.write(f"\033[{i+3};1H")
             sys.stdout.write("\033[K")
             sys.stdout.write(output_line)
         sys.stdout.flush()
+
+        loop_time.append(time.time() - start_time)
 
 
 except Exception as e:
