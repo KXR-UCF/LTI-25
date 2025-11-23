@@ -33,17 +33,18 @@ try:
     if not DIFFERENTIAL:
         ADC.setMode(0)
 
-    sys.stdout.write(f"\033[0;1H")
-    sys.stdout.write("\033[K")
-    sys.stdout.write(f"{f'Channel':<10} {'Voltage'}")
     while True:
         start_time = time.time()
         ADC_Value = ADC.getAll()
         voltages = np.array(ADC_Value) * 5.0 / 0x7fffff
-        
+
+        sys.stdout.write(f"\033[1;1H")
+        sys.stdout.write("\033[K")
+        sys.stdout.write(f"{'SPS:':<10} {len(loop_time)/np.sum(loop_time):.2f}")
+
         sys.stdout.write(f"\033[2;1H")
         sys.stdout.write("\033[K")
-        sys.stdout.write(f"SPS: {len(loop_time)/np.sum(loop_time):.2f}")
+        sys.stdout.write(f"{f'Channel':<10} {'Voltage'}")
         for i, voltage in enumerate(voltages):
             if DIFFERENTIAL and i > 3:
                 break
