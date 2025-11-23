@@ -95,9 +95,7 @@ class ADS1256:
         GPIO.setwarnings(False)
         GPIO.setup(self.rst_pin, GPIO.OUT)
         GPIO.setup(self.cs_pin, GPIO.OUT)
-        #GPIO.setup(DRDY_PIN, GPIO.IN)
         GPIO.setup(self.drdy_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        SPI.max_speed_hz = 20000
         SPI.mode = 0b01
         return 0
 
@@ -125,28 +123,30 @@ class ADS1256:
         self.spi_writebyte([CMD['CMD_RREG'] | reg, 0x00])
         data = self.spi_readbytes(1)
         self.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
-
         return data
-        
-    def waitDRDY(self):
-        for i in range(0,400000,1):
+    
+    # def waitDRDY_fast(self):
+    #     """Quicker, but may return before DRDY"""
+    #     for i in range(10):
+    #         if (self.digital_read(self.drdy_pin) == 0):
+    #             return
+
+    def waitDRDY_safe(self):
+        for i in range(100000):
             if(self.digital_read(self.drdy_pin) == 0):
-                
-                break
-        if(i >= 400000):
-            print ("Time Out ...\r\n")
+                return
+        print ("DRDY Time Out ...\r\n")
         
         
     def readChipID(self):
-        self.waitDRDY()
+        self.waitDRDY_safe()
         id = self.readData(REG_E['REG_STATUS'])
         id = id[0] >> 4
-        # print 'ID',id
         return id
         
     #The configuration parameters of ADC, gain and data rate
     def configADC(self, gain, drate):
-        self.waitDRDY()
+        self.waitDRDY_safe()
         buf = [0,0,0,0,0,0,0,0]
         buf[0] = (0<<3) | (1<<2) | (0<<1)
         buf[1] = 0x08
@@ -156,7 +156,6 @@ class ADS1256:
         self.digital_write(self.cs_pin, GPIO.LOW)#cs  0
         self.spi_writebyte([CMD['CMD_WREG'] | 0, 0x03])
         self.spi_writebyte(buf)
-        
         self.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
         self.delay_ms(1) 
 
@@ -200,13 +199,12 @@ class ADS1256:
         return 0
         
     def read_ADC_Data(self):
-        self.waitDRDY()
+        self.waitDRDY_fast()
         self.digital_write(self.cs_pin, GPIO.LOW)#cs  0
         self.spi_writebyte([CMD['CMD_RDATA']])
-        # self.delay_ms(10)
-
         buf = self.spi_readbytes(3)
         self.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
+        
         read = (buf[0]<<16) & 0xff0000
         read |= (buf[1]<<8) & 0xff00
         read |= (buf[2]) & 0xff
@@ -220,20 +218,31 @@ class ADS1256:
                 return 0
             self.setChannel(Channel)
             self.writeCmd(CMD['CMD_SYNC'])
-            # self.delay_ms(10)
             self.writeCmd(CMD['CMD_WAKEUP'])
-            # self.delay_ms(200)
             Value = self.read_ADC_Data()
         else:
             if(Channel>=4):
                 return 0
             self.setDiffChannel(Channel)
             self.writeCmd(CMD['CMD_SYNC'])
-            # self.delay_ms(10) 
             self.writeCmd(CMD['CMD_WAKEUP'])
-            # self.delay_ms(10) 
             Value = self.read_ADC_Data()
         return Value
+    
+    # def getChannelValue_fast(self, Channel):
+    #     if(self.scan_mode == 0):# 0  Single-ended input  8 channel1 Differential input  4 channe
+    #         if(Channel>=8):
+    #             return 0
+    #         self.setChannel(Channel)
+           
+    #     else:
+    #         if(Channel>=4):
+    #             return 0
+    #         self.setDiffChannel(Channel)
+
+    #     time.sleep(0.00001)  # 10 microseconds for settling
+
+    #     return self.read_ADC_Data()
         
     # returns all values by channel
     # automatically handles differential mode through getChannelValue
@@ -241,6 +250,12 @@ class ADS1256:
         ADC_Value = [0,0,0,0,0,0,0,0]
         for i in range(0,8,1):
             ADC_Value[i] = self.getChannelValue(i)
+        return ADC_Value
+    
+    def getAll_fast(self):
+        ADC_Value = [0,0,0,0,0,0,0,0]
+        for i in range(0,8,1):
+            ADC_Value[i] = self.getChannelValue_fast(i)
         return ADC_Value
 ### END OF FILE ###
 
