@@ -1,0 +1,21 @@
+{
+  "name": "cosmo-backend",
+  "version": "1.0.0",
+  "description": "Backend server visualizing telemetry for KXR LTI Cosmo subsystem",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "KXR LTI Electronics/Software Team",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "pg": "^8.16.3",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
