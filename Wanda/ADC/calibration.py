@@ -33,7 +33,7 @@ try:
 
     sys.stdout.write(f"\033[0;1H")
     sys.stdout.write("\033[K")
-    sys.stdout.write(f"{f'Channel':<10}")
+    sys.stdout.write(f"{f'Channel':<10} {'Voltage'}")
     while True:
         ADC_Value = ADC.getAll()
         voltages = np.array(ADC_Value) * 5.0 / 0x7fffff
@@ -44,7 +44,7 @@ try:
 
             sys.stdout.write(f"\033[{i+2};1H")
             sys.stdout.write("\033[K")
-            sys.stdout.write(f"{i:<10}")
+            sys.stdout.write(f"{i:<10} {voltage:.6f}")
 
         sys.stdout.flush()
 
