@@ -131,7 +131,7 @@ class ADS1256:
     #         if (self.digital_read(self.drdy_pin) == 0):
     #             return
 
-    def waitDRDY_safe(self):
+    def waitDRDY(self):
         for i in range(100000):
             if(self.digital_read(self.drdy_pin) == 0):
                 return
@@ -139,14 +139,14 @@ class ADS1256:
         
         
     def readChipID(self):
-        self.waitDRDY_safe()
+        self.waitDRDY()
         id = self.readData(REG_E['REG_STATUS'])
         id = id[0] >> 4
         return id
         
     #The configuration parameters of ADC, gain and data rate
     def configADC(self, gain, drate):
-        self.waitDRDY_safe()
+        self.waitDRDY()
         buf = [0,0,0,0,0,0,0,0]
         buf[0] = (0<<3) | (1<<2) | (0<<1)
         buf[1] = 0x08
