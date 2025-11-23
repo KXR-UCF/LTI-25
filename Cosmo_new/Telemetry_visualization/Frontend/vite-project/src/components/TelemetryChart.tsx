@@ -180,7 +180,11 @@ export const TelemetryChart = forwardRef<ChartHandle, TelemetryChartProps>(
                   if (max === undefined || max === null || max === min) {
                     return [0, 100];
                   }
-                  return [min, max];
+
+                  // Auto-scale with 10% padding for better visualization
+                  const range = max - min;
+                  const padding = range * 0.1;
+                  return [min - padding, max + padding];
                 }
               },
         },

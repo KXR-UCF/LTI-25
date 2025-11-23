@@ -8,7 +8,7 @@ export interface SensorConfig {
     unit: string;        // Display unit (e.g., 'psi')
     color: string;       // Hex color for the chart line
     group: 'pressure' | 'thrust' | 'tank' | 'temp'; // For layout grouping
-    domain: [number, number]; // Fixed Y-axis range (e.g., [0, 1500])
+    domain?: [number, number]; // Optional fixed Y-axis range (e.g., [0, 1500]). If not set, auto-scales based on data.
     showStats?: boolean; // Hey, don't just show a squiggly line chart, render a Big Number for the current value and a smaller number for the Max Peak value.
   }
   

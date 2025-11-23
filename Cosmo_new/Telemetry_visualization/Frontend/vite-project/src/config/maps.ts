@@ -5,25 +5,25 @@ import { DashboardConfig, SensorConfig, SwitchConfig } from '../types/config';
 
 export const ALL_SENSORS: SensorConfig[] = [
   // PRESSURE SENSORS (8 total)
-  { id: 'PT-01', label: 'N2 Inlet', unit: 'psi', color: '#06b6d4', group: 'pressure', domain: [0, 2000], showStats: true },
-  { id: 'PT-02', label: 'Nox Inlet', unit: 'psi', color: '#06b6d4', group: 'pressure', domain: [0, 1500], showStats: true },
-  { id: 'PT-03', label: 'Dome Reg', unit: 'psi', color: '#06b6d4', group: 'pressure', domain: [0, 1000], showStats: true },
-  { id: 'PT-04', label: 'N2 Tank', unit: 'psi', color: '#06b6d4', group: 'pressure', domain: [0, 3500], showStats: true },
-  { id: 'PT-05', label: 'Fuel Tank', unit: 'psi', color: '#06b6d4', group: 'pressure', domain: [0, 1000], showStats: true },
-  { id: 'PT-06', label: 'Chamber A', unit: 'psi', color: '#06b6d4', group: 'pressure', domain: [0, 1000], showStats: true },
-  { id: 'PT-07', label: 'Chamber B', unit: 'psi', color: '#06b6d4', group: 'pressure', domain: [0, 1000], showStats: true },
-  { id: 'PT-08', label: 'Fuel Feed', unit: 'psi', color: '#06b6d4', group: 'pressure', domain: [0, 1000], showStats: true },
+  { id: 'PT-01', label: 'N2 Inlet', unit: 'psi', color: '#06b6d4', group: 'pressure', showStats: true },
+  { id: 'PT-02', label: 'Nox Inlet', unit: 'psi', color: '#06b6d4', group: 'pressure', showStats: true },
+  { id: 'PT-03', label: 'Dome Reg', unit: 'psi', color: '#06b6d4', group: 'pressure', showStats: true },
+  { id: 'PT-04', label: 'N2 Tank', unit: 'psi', color: '#06b6d4', group: 'pressure', showStats: true },
+  { id: 'PT-05', label: 'Fuel Tank', unit: 'psi', color: '#06b6d4', group: 'pressure', showStats: true },
+  { id: 'PT-06', label: 'Chamber A', unit: 'psi', color: '#06b6d4', group: 'pressure', showStats: true },
+  { id: 'PT-07', label: 'Chamber B', unit: 'psi', color: '#06b6d4', group: 'pressure', showStats: true },
+  { id: 'PT-08', label: 'Fuel Feed', unit: 'psi', color: '#06b6d4', group: 'pressure', showStats: true },
 
   // LOAD CELLS / THRUST (5 total)
-  { id: 'LC-Net', label: 'NET FORCE', unit: 'lbs', color: '#ef4444', group: 'thrust', domain: [0, 5000], showStats: true },
-  { id: 'LC-2', label: 'Thrust 1', unit: 'lbs', color: '#b91c1c', group: 'thrust', domain: [0, 2000], showStats: true },
-  { id: 'LC-3', label: 'Thrust 2', unit: 'lbs', color: '#b91c1c', group: 'thrust', domain: [0, 2000], showStats: true },
-  { id: 'LC-4', label: 'Thrust 3', unit: 'lbs', color: '#b91c1c', group: 'thrust', domain: [0, 2000], showStats: true },
-  { id: 'LC-1', label: 'Nox Tank Wt', unit: 'lbs', color: '#f97316', group: 'thrust', domain: [0, 200], showStats: true },
+  { id: 'LC-Net', label: 'NET FORCE', unit: 'lbs', color: '#ef4444', group: 'thrust', showStats: true },
+  { id: 'LC-2', label: 'Thrust 1', unit: 'lbs', color: '#b91c1c', group: 'thrust', showStats: true },
+  { id: 'LC-3', label: 'Thrust 2', unit: 'lbs', color: '#b91c1c', group: 'thrust', showStats: true },
+  { id: 'LC-4', label: 'Thrust 3', unit: 'lbs', color: '#b91c1c', group: 'thrust', showStats: true },
+  { id: 'LC-1', label: 'Nox Tank Wt', unit: 'lbs', color: '#f97316', group: 'thrust', showStats: true },
 
   // TEMPERATURE SENSORS (2 total)
-  { id: 'TC-2', label: 'Chamber', unit: '°C', color: '#a855f7', group: 'temp', domain: [0, 1000], showStats: true },
-  { id: 'TC-1', label: 'Nox Feed', unit: '°C', color: '#a855f7', group: 'temp', domain: [-50, 50], showStats: true },
+  { id: 'TC-2', label: 'Chamber', unit: '°C', color: '#a855f7', group: 'temp', showStats: true },
+  { id: 'TC-1', label: 'Nox Feed', unit: '°C', color: '#a855f7', group: 'temp', showStats: true },
 ];
 
 // All available switches - matches backend SwitchState interface
