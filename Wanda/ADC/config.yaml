@@ -1,7 +1,7 @@
 ADC1:
   enabled: true
   gain: "GAIN_1"
-  data_rate: "30000SPS"
+  data_rate: "3750SPS"
   RST_PIN: 24
   CS_PIN: 8        
   DRDY_PIN: 22
@@ -12,9 +12,9 @@ ADC1:
     3: "lc4"
 
 ADC2:
-  enabled: false
+  enabled: true
   gain: "GAIN_1"
-  data_rate: "30000SPS"
+  data_rate: "3750SPS"
   RST_PIN: 25
   CS_PIN: 7 
   DRDY_PIN: 23

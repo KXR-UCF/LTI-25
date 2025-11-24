@@ -63,7 +63,7 @@ CMD = {'CMD_WAKEUP' : 0x00,     # Completes SYNC and Exits Standby Mode 0000  00
       }
 
 SPI = spidev.SpiDev(0, 0)
-SPI.max_speed_hz = 100000  # 100 kHz
+SPI.max_speed_hz = 500000  # 500 kHz
 
 
 class ADS1256:
@@ -101,6 +101,9 @@ class ADS1256:
         SPI.mode = 0b01
         return 0
 
+    def module_exit(self):
+        GPIO.cleanup()
+        SPI.close()
 
     # Hardware reset
     def reset(self):
@@ -203,7 +206,7 @@ class ADS1256:
         self.waitDRDY()
         self.digital_write(self.cs_pin, GPIO.LOW)#cs  0
         self.spi_writebyte([CMD['CMD_RDATA']])
-        # self.delay_ms(10)
+        self.delay_ms(10)
 
         buf = self.spi_readbytes(3)
         self.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
@@ -211,7 +214,7 @@ class ADS1256:
         read |= (buf[1]<<8) & 0xff00
         read |= (buf[2]) & 0xff
         if (read & 0x800000):
-            read &= 0xF000000
+            read &= 0xFF000000
         return read
  
     def getChannelValue(self, Channel):
@@ -230,9 +233,9 @@ class ADS1256:
                 return 0
             self.setDiffChannel(Channel)
             self.writeCmd(CMD['CMD_SYNC'])
-            # self.delay_ms(10) 
+            self.delay_ms(10)
             self.writeCmd(CMD['CMD_WAKEUP'])
-            # self.delay_ms(10) 
+            self.delay_ms(10)
             Value = self.read_ADC_Data()
         return Value
         
