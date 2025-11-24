@@ -30,7 +30,7 @@ if ADC2_ENABLED:
     ENABLED_ADCS.append(2)
 
 # sets and initilizes the enabled ADCs from the config file
-_ADCs = []
+_ADCs = {}
 for adc in ENABLED_ADCS:
     rst_pin = config[f"ADC{adc}"]["RST_PIN"]
     cs_pin = config[f"ADC{adc}"]["CS_PIN"]
@@ -42,7 +42,7 @@ for adc in ENABLED_ADCS:
     new_ADC = ADS1256.ADS1256(rst_pin, cs_pin, drdy_pin)
     new_ADC.init()
     new_ADC.configADC(ADS1256.GAIN_E[gain], ADS1256.DRATE_E[data_rate])
-    _ADCs.append(new_ADC)
+    _ADCs[adc] = (new_ADC)
     print(f"ADC{adc} Initialized")
 
 
@@ -89,7 +89,7 @@ class Sensor:
         Returns:
             sensor_voltage (float): the voltage (0-5V) returned from the sensor
         """
-        adc = _ADCs[self.adc_id - 1]
+        adc = _ADCs[self.adc_id]
         sensor_value = adc.getChannelValue(self.channel_id)   # gets the sensor value
         sensor_voltage = sensor_value * 5.0 / 0x7fffff        # converts the digital value to volts
         return sensor_voltage
@@ -163,113 +163,113 @@ class ThermoCouple(Sensor):
         super().__init__(sensor_name)
 
 
-class SensorGroup:
-    """Handles operations between multiple sensors"""
+# class SensorGroup:
+#     """Handles operations between multiple sensors"""
 
-    def __init__(self):
-        self.sensors = []
+#     def __init__(self):
+#         self.sensors = []
 
-    def get_sensor(self, sensor_name: str) -> type[Sensor]:
-        """Returns sensor of sensor_name
+#     def get_sensor(self, sensor_name: str) -> type[Sensor]:
+#         """Returns sensor of sensor_name
         
-        Args:
-            sensor_name (str): the name of the sensor in the config file
+#         Args:
+#             sensor_name (str): the name of the sensor in the config file
         
-        Returns:
-            sensor (type[Sensor]): an object of class Sensor or a class 
-                that inherits from Sensor with the name sensor_name
-        """
-        for sensor in self.sensors:
-            if sensor_name is sensor.name:
-                return sensor
+#         Returns:
+#             sensor (type[Sensor]): an object of class Sensor or a class 
+#                 that inherits from Sensor with the name sensor_name
+#         """
+#         for sensor in self.sensors:
+#             if sensor_name is sensor.name:
+#                 return sensor
 
-    def add_sensor(self, sensor: Sensor):
-        """Adds sensor to the sensor group
+#     def add_sensor(self, sensor: Sensor):
+#         """Adds sensor to the sensor group
         
-        Args:
-            sensor (Sensor): sensor to add to the sensor group
-        """
-        self.sensors.append(sensor)
+#         Args:
+#             sensor (Sensor): sensor to add to the sensor group
+#         """
+#         self.sensors.append(sensor)
 
-    def add_sensor_from_list(self, sensor_names: list, sensor_class: type[Sensor] = Sensor):
-        """Adds sensors to the group from at list
+#     def add_sensor_from_list(self, sensor_names: list, sensor_class: type[Sensor] = Sensor):
+#         """Adds sensors to the group from at list
         
-        Args:
-            sensor_names (list): a list of sensor names from the config file
-            sensor_class (type[Sensor], optional): The sensor class or subclass to 
-                instantiate for each sensor name. Accepts any class that inherits 
-                from Sensor. Defaults to Sensor.
-        """
-        for sensor_name in sensor_names:
-            self.sensors.append(sensor_class(sensor_name))
+#         Args:
+#             sensor_names (list): a list of sensor names from the config file
+#             sensor_class (type[Sensor], optional): The sensor class or subclass to 
+#                 instantiate for each sensor name. Accepts any class that inherits 
+#                 from Sensor. Defaults to Sensor.
+#         """
+#         for sensor_name in sensor_names:
+#             self.sensors.append(sensor_class(sensor_name))
 
-    def add_all_from_config(self, sensor_class: type[Sensor] = Sensor):
-        try:
-            for sensor_name in config["devices"][sensor_class.sensor_type]:
-                self.sensors.append(sensor_class(sensor_name))
-        except KeyError:
-            print(f"Sensor type <{sensor_class.sensor_type}> not in config file")
+#     def add_all_from_config(self, sensor_class: type[Sensor] = Sensor):
+#         try:
+#             for sensor_name in config["devices"][sensor_class.sensor_type]:
+#                 self.sensors.append(sensor_class(sensor_name))
+#         except KeyError:
+#             print(f"Sensor type <{sensor_class.sensor_type}> not in config file")
 
-    def remove_sensor(self, sensor_name: str):
-        """Remove sensor with name sensor_name from group
+#     def remove_sensor(self, sensor_name: str):
+#         """Remove sensor with name sensor_name from group
         
-        Args:
-            sensor_name (str): The name of the sensor to remove. 
-                The name should match one that is in the config file
-        """
-        for sensor in self.sensors:
-            if sensor_name is sensor.name:
-                self.sensors.remove(sensor)
+#         Args:
+#             sensor_name (str): The name of the sensor to remove. 
+#                 The name should match one that is in the config file
+#         """
+#         for sensor in self.sensors:
+#             if sensor_name is sensor.name:
+#                 self.sensors.remove(sensor)
 
-    def get_all_voltages(self) -> list:
-        """Gets the voltages of each load cell
+#     def get_all_voltages(self) -> list:
+#         """Gets the voltages of each load cell
         
-        Returns:
-            voltages (list): A list of the voltages in order of the load cells
-        """
-        voltages = []
-        for sensor in self.sensors:
-            voltages.append(sensor.get_voltage())
+#         Returns:
+#             voltages (list): A list of the voltages in order of the load cells
+#         """
+#         voltages = []
+#         for sensor in self.sensors:
+#             voltages.append(sensor.get_voltage())
 
-        return voltages
+#         return voltages
 
 
-class LoadCellGroup(SensorGroup):
-    """Uses the ADCs to manage all the attached load cells"""
+# class LoadCellGroup(SensorGroup):
+#     """Uses the ADCs to manage all the attached load cells"""
     
-    def __init__(self):
-        super().__init__()
+#     def __init__(self):
+#         super().__init__()
         
-    def add_sensor_from_list(self, load_cell_names: list):
-        """Adds load cells to the group from a list
+#     def add_sensor_from_list(self, load_cell_names: list):
+#         """Adds load cells to the group from a list
         
-        Args:
-            load_cell_names (list): a list of load cell names from the config file
-        """
-        super().add_sensor_from_list(sensor_names=load_cell_names, sensor_type=LoadCell)
+#         Args:
+#             load_cell_names (list): a list of load cell names from the config file
+#         """
+#         super().add_sensor_from_list(sensor_names=load_cell_names, sensor_type=LoadCell)
 
-    def print_load_cells_information(self):
-        print(f"Load Cells:")
-        for load_cell in self.sensors:
-            print(f"\tADC: {load_cell.adc_id}\
-                    \tChannel: {load_cell.channel_id}\
-                    \tTare: {load_cell.tare}\
-                    \tScale: {load_cell.scale}")
+#     def print_load_cells_information(self):
+#         print(f"Load Cells:")
+#         for load_cell in self.sensors:
+#             print(f"\tADC: {load_cell.adc_id}\
+#                     \tChannel: {load_cell.channel_id}\
+#                     \tTare: {load_cell.tare}\
+#                     \tScale: {load_cell.scale}")
         
-    def add_all_from_config(self, sensor_class: type[Sensor] = Sensor):
-        super().add_all_from_config(sensor_class=LoadCell)
+#     def add_all_from_config(self, sensor_class: type[Sensor] = Sensor):
+#         super().add_all_from_config(sensor_class=LoadCell)
 
-    def get_all_forces(self) -> list:
-        """Gets all the forces on each load cell
+#     def get_all_forces(self) -> list:
+#         """Gets all the forces on each load cell
         
-        Returns:
-            forces (list): A list of the forces in order of the load cells
-        """
-        forces = []
-        for sensor in self.sensors:
-            forces.append(sensor.get_force())
-        return forces
+#         Returns:
+#             forces (list): A list of the forces in order of the load cells
+#         """
+#         forces = []
+#         for sensor in self.sensors:
+#             forces.append(sensor.get_force())
+#         return forces
 
-    def calibrate_tares(self, num_samples):
-        for load_cell in self.sensors:
-            load_cell.calibrate_tare(num_samples)
+#     def calibrate_tares(self, num_samples):
+#         for load_cell in self.sensors:
+#             load_cell.calibrate_tare(num_samples)

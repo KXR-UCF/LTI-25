@@ -63,7 +63,7 @@ CMD = {'CMD_WAKEUP' : 0x00,     # Completes SYNC and Exits Standby Mode 0000  00
       }
 
 SPI = spidev.SpiDev(0, 0)
-SPI.max_speed_hz = 1000000  # 1 MHz
+SPI.max_speed_hz = 100000  # 100 kHz
 
 
 class ADS1256:
@@ -97,7 +97,7 @@ class ADS1256:
         GPIO.setup(self.cs_pin, GPIO.OUT)
         #GPIO.setup(DRDY_PIN, GPIO.IN)
         GPIO.setup(self.drdy_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        SPI.max_speed_hz = 20000
+        # SPI.max_speed_hz = 20000
         SPI.mode = 0b01
         return 0
 
