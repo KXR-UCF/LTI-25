@@ -47,15 +47,13 @@ rows = [
 # SWITCH_STATE_FILENAME = "switch_states.json"
 # CONFIG_FILE_NAME = adcmanager.CONFIG_FILE_NAME
 
-# load_cell_group1 = adcmanager.LoadCellGroup()
-# load_cell_group1.add_all_from_config()
-# load_cell_group1.calibrate_tares(num_samples=1000)
-# load_cell_group1.print_load_cells_information()
-
 load_cells = []
-for i in range(8):
+for i in range(4):
      load_cells.append(adcmanager.LoadCell(f"lc{i+1}"))
 
+pts = []
+for i in range(8):
+     pts.append(adcmanager.PressureTransducer(f"pt{i+1}"))
 
 row_count = 0
 start_time = 0
@@ -85,6 +83,11 @@ try:
             columns = {}
             for load_cell in load_cells:
                  columns[load_cell.name] = load_cell.get_force()
+            for pt in pts:
+                 columns[pt.name] = pt.get_pressure()
+
+            if len(load_cells) > 0:
+                 columns['lc_net_force'] = columns['lc1'] + columns['lc2'] + columns['lc3']
 
             adc_times.append(time.time() - adc_start)
 
