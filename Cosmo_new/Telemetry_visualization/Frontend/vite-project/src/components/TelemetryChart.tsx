@@ -353,6 +353,12 @@ export const TelemetryChart = forwardRef<ChartHandle, TelemetryChartProps>(
       addDataPoint: (time: number, value: number) => {
         if (!uplotRef.current) return;
 
+        // Validate inputs
+        if (time === undefined || time === null || value === undefined || value === null || isNaN(value)) {
+          console.warn(`[${config.id}] Invalid data point: time=${time}, value=${value}`);
+          return;
+        }
+
         const [times, values] = dataRef.current;
 
         times.push(time);

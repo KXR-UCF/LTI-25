@@ -89,14 +89,14 @@ def setup_tables():
             cursor.execute("""
                 CREATE TABLE wanda1 (
                     timestamp TIMESTAMP,
-                    pt01 DOUBLE,
-                    pt02 DOUBLE,
-                    pt03 DOUBLE,
-                    pt04 DOUBLE,
-                    pt05 DOUBLE,
-                    pt06 DOUBLE,
-                    pt07 DOUBLE,
-                    pt08 DOUBLE,
+                    pt1 DOUBLE,
+                    pt2 DOUBLE,
+                    pt3 DOUBLE,
+                    pt4 DOUBLE,
+                    pt5 DOUBLE,
+                    pt6 DOUBLE,
+                    pt7 DOUBLE,
+                    pt8 DOUBLE,
                     continuity_raw DOUBLE
                 ) TIMESTAMP(timestamp) PARTITION BY DAY
             """)
@@ -230,14 +230,14 @@ def generate_sample_data(elapsed_time, duration_seconds):
 
     # Prepare data for each table
     wanda1_data = {
-        'pt01': round(pt01, 2),
-        'pt02': round(pt02, 2),
-        'pt03': round(pt03, 2),
-        'pt04': round(pt04, 2),
-        'pt05': round(pt05, 2),
-        'pt06': round(pt06, 2),
-        'pt07': round(pt07, 2),
-        'pt08': round(pt08, 2),
+        'pt1': round(pt01, 2),
+        'pt2': round(pt02, 2),
+        'pt3': round(pt03, 2),
+        'pt4': round(pt04, 2),
+        'pt5': round(pt05, 2),
+        'pt6': round(pt06, 2),
+        'pt7': round(pt07, 2),
+        'pt8': round(pt08, 2),
         'continuity_raw': round(continuity_raw, 2)
     }
 
