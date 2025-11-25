@@ -32,26 +32,26 @@ export function SensorGrid({ config, registry }: SensorGridProps) {
   const getBentoPosition = (sensorId: string) => {
     const positions: Record<string, string> = {
       // === PRESSURE TRANSDUCERS (Rows 2-3) ===
-      'PT-01': 'col-start-1 row-start-2 col-span-1 row-span-1',
-      'PT-02': 'col-start-2 row-start-2 col-span-1 row-span-1',
-      'PT-03': 'col-start-3 row-start-2 col-span-1 row-span-1',
-      'PT-04': 'col-start-4 row-start-2 col-span-1 row-span-1',
+      'pt1': 'col-start-1 row-start-2 col-span-1 row-span-1',
+      'pt2': 'col-start-2 row-start-2 col-span-1 row-span-1',
+      'pt3': 'col-start-3 row-start-2 col-span-1 row-span-1',
+      'pt4': 'col-start-4 row-start-2 col-span-1 row-span-1',
 
-      'PT-05': 'col-start-1 row-start-3 col-span-1 row-span-1',
-      'PT-06': 'col-start-2 row-start-3 col-span-1 row-span-1',
-      'PT-07': 'col-start-3 row-start-3 col-span-1 row-span-1',
-      'PT-08': 'col-start-4 row-start-3 col-span-1 row-span-1',
+      'pt5': 'col-start-1 row-start-3 col-span-1 row-span-1',
+      'pt6': 'col-start-2 row-start-3 col-span-1 row-span-1',
+      'pt7': 'col-start-3 row-start-3 col-span-1 row-span-1',
+      'pt8': 'col-start-4 row-start-3 col-span-1 row-span-1',
 
       // === LOAD CELLS (Rows 5-6) ===
-      'LC-Net': 'col-start-1 row-start-5 col-span-1 row-span-2',      // 1×2
-      'LC-1': 'col-start-2 row-start-5 col-span-1 row-span-2',        // 1×2 (Nox Tank Wt)
-      'LC-2': 'col-start-3 row-start-5 col-span-1 row-span-2',        // 1×2 (Thrust 1)
-      'LC-3': 'col-start-4 row-start-5 col-span-1 row-span-1',        // 1×1 (Thrust 2)
-      'LC-4': 'col-start-4 row-start-6 col-span-1 row-span-1',        // 1×1 (Thrust 3)
+      'lc_net_force': 'col-start-1 row-start-5 col-span-1 row-span-2',      // 1×2
+      'lc1': 'col-start-2 row-start-5 col-span-1 row-span-2',        // 1×2 (Nox Tank Wt)
+      'lc2': 'col-start-3 row-start-5 col-span-1 row-span-2',        // 1×2 (Thrust 1)
+      'lc3': 'col-start-4 row-start-5 col-span-1 row-span-1',        // 1×1 (Thrust 2)
+      'lc4': 'col-start-4 row-start-6 col-span-1 row-span-1',        // 1×1 (Thrust 3)
 
       // === THERMOCOUPLES (Rows 8) ===
-      'TC-2': 'col-start-1 row-start-8 col-span-2 row-span-1',        // 2×1 left half (Chamber)
-      'TC-1': 'col-start-3 row-start-8 col-span-2 row-span-1',        // 2×1 right half (Nox Feed)
+      'tc2': 'col-start-1 row-start-8 col-span-2 row-span-1',        // 2×1 left half (Chamber)
+      'tc1': 'col-start-3 row-start-8 col-span-2 row-span-1',        // 2×1 right half (Nox Feed)
     };
 
     return positions[sensorId] || 'col-span-1 row-span-1';
@@ -86,11 +86,11 @@ export function SensorGrid({ config, registry }: SensorGridProps) {
     // Load cells view layout (4 cols x 2 rows)
     if (sensorCount === 5) {
       const positions: Record<string, string> = {
-        'LC-Net': 'col-start-1 row-start-1 col-span-2 row-span-2',      // 2×2 hero (left side)
-        'LC-1': 'col-start-3 row-start-1 col-span-1 row-span-1',        // Top right (Nox Tank Wt)
-        'LC-2': 'col-start-4 row-start-1 col-span-1 row-span-1',        // Top far right (Thrust 1)
-        'LC-3': 'col-start-3 row-start-2 col-span-1 row-span-1',        // Bottom right (Thrust 2)
-        'LC-4': 'col-start-4 row-start-2 col-span-1 row-span-1',        // Bottom far right (Thrust 3)
+        'lc_net_force': 'col-start-1 row-start-1 col-span-2 row-span-2',      // 2×2 hero (left side)
+        'lc1': 'col-start-3 row-start-1 col-span-1 row-span-1',        // Top right (Nox Tank Wt)
+        'lc2': 'col-start-4 row-start-1 col-span-1 row-span-1',        // Top far right (Thrust 1)
+        'lc3': 'col-start-3 row-start-2 col-span-1 row-span-1',        // Bottom right (Thrust 2)
+        'lc4': 'col-start-4 row-start-2 col-span-1 row-span-1',        // Bottom far right (Thrust 3)
       };
       return positions[sensorId] || 'col-span-1 row-span-1';
     }
