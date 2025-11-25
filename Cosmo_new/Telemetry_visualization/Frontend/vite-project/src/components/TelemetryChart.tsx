@@ -48,7 +48,7 @@ export const TelemetryChart = forwardRef<ChartHandle, TelemetryChartProps>(
         class: 'uplot-chart',
         width: containerWidth,
         height: containerHeight,
-        padding: [15, 15, 0, 0], // [top, right, bottom, left] - stats now in bottom bar
+        padding: [25, 15, 0, 0], // [top, right, bottom, left] - increased top padding to prevent cutoff
         series: [
           {}, // X-Axis (Time)
           {
@@ -122,7 +122,7 @@ export const TelemetryChart = forwardRef<ChartHandle, TelemetryChartProps>(
               const max = u.scales.y.max || 1000;
               const range = max - min;
 
-              // Determine nice interval
+              // Determine nice interval (now handles decimal values)
               let interval = 100;
               if (range > 5000) interval = 1000;
               else if (range > 2000) interval = 500;
@@ -130,16 +130,30 @@ export const TelemetryChart = forwardRef<ChartHandle, TelemetryChartProps>(
               else if (range > 500) interval = 100;
               else if (range > 200) interval = 50;
               else if (range > 100) interval = 25;
-              else interval = 10;
+              else if (range > 10) interval = 10;
+              else if (range > 5) interval = 5;
+              else if (range > 2) interval = 1;
+              else if (range > 1) interval = 0.5;
+              else if (range > 0.5) interval = 0.1;
+              else if (range > 0.1) interval = 0.05;
+              else if (range > 0.05) interval = 0.01;
+              else if (range > 0.01) interval = 0.005;
+              else interval = 0.001;
 
               const splits = [];
               const start = Math.floor(min / interval) * interval;
-              for (let i = start; i <= max; i += interval) {
-                splits.push(i);
+              for (let i = start; i <= max + interval/2; i += interval) {
+                splits.push(Number(i.toFixed(10))); // Fix floating point precision
               }
               return splits;
             },
-            values: (_u, vals) => vals.map(v => Math.round(v).toLocaleString()),
+            values: (_u, vals) => vals.map(v => {
+              // Smart formatting based on value magnitude
+              if (Math.abs(v) >= 100) return Math.round(v).toLocaleString();
+              if (Math.abs(v) >= 1) return v.toFixed(1);
+              if (Math.abs(v) >= 0.01) return v.toFixed(3);
+              return v.toFixed(4);
+            }),
             font: '10px monospace',
             size: 50,
             gap: 5,
@@ -169,22 +183,42 @@ export const TelemetryChart = forwardRef<ChartHandle, TelemetryChartProps>(
           },
           y: config.domain
             ? {
-                range: (_u, _min, _max) => {
-                  // Always use the configured domain
-                  return config.domain as [number, number];
+                range: (_u, min, max) => {
+                  const [domainMin, domainMax] = config.domain as [number, number];
+
+                  // If no data yet, use configured domain
+                  if (min === undefined || max === undefined || min === null || max === null || min === max) {
+                    return [domainMin, domainMax];
+                  }
+
+                  // If data exceeds configured domain, auto-expand with padding
+                  if (min < domainMin || max > domainMax) {
+                    const range = max - min;
+                    const padding = range * 0.3;
+                    return [Math.min(min - padding, domainMin), Math.max(max + padding, domainMax)];
+                  }
+
+                  // Otherwise use configured domain
+                  return [domainMin, domainMax];
                 }
               }
             : {
                 range: (_u, min, max) => {
-                  // Show 0-100 by default when no data
+                  // Show 0-1 by default when no data (better for small decimal values)
                   if (max === undefined || max === null || max === min) {
-                    return [0, 100];
+                    return [0, 1];
                   }
 
-                  // Auto-scale with 10% padding for better visualization
+                  // Auto-scale with 30% padding for better visualization
                   const range = max - min;
-                  const padding = range * 0.1;
-                  return [min - padding, max + padding];
+                  const padding = range * 0.3;
+
+                  // Ensure minimum range to avoid too-tight scaling
+                  const minRange = Math.max(range * 0.3, 0.01);
+                  const finalMin = min - Math.max(padding, minRange);
+                  const finalMax = max + Math.max(padding, minRange);
+
+                  return [finalMin, finalMax];
                 }
               },
         },
