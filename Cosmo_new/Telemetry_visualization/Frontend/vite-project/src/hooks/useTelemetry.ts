@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { TelemetryPacket, SwitchState } from '../types/telemetry';
 import { ChartHandle } from '../components/TelemetryChart';
@@ -14,7 +14,7 @@ const DEFAULT_SWITCHES: SwitchState = {
 // Connect on load
 const WS_URL = 'ws://localhost:3001';
 
-export type RecordingState = 'idle' | 'recording' | 'stopped';
+export type RecordingState = 'idle' | 'armed' | 'recording' | 'stopped';
 
 // Store telemetry data points with timestamps for freezing capability
 export interface StoredDataPoint {
@@ -28,8 +28,12 @@ export function useTelemetry() {
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
   // Stores the latest packet purely for the Switch UI (low frequency updates)
   const [latestPacket, setLatestPacket] = useState<TelemetryPacket | null>(null);
-  const [runtimeStr, setRuntimeStr] = useState<string>('00:00.00');
+  const [runtimeStr, setRuntimeStr] = useState<string>('00:00:00.00');
   const [filterEnabled, setFilterEnabled] = useState<boolean>(true);
+  // Data health state: null = healthy, number = ms since last packet
+  const [dataLag, setDataLag] = useState<number | null>(null);
+  // Countdown state: holds when countdown is paused
+  const [isCountdownHeld, setIsCountdownHeld] = useState<boolean>(false);
 
   // --- REFS (Performance Critical - No Re-renders) ---
   const startTimeRef = useRef<number | null>(null);
@@ -40,6 +44,14 @@ export function useTelemetry() {
   const recordingStateRef = useRef<RecordingState>('idle');
   const filtersRef = useRef<Map<string, MedianFilter>>(new Map());
   const filterEnabledRef = useRef<boolean>(true);
+  // Smooth clock: track last packet time for lag detection
+  const lastPacketTimeRef = useRef<number | null>(null);
+  const clientStartTimeRef = useRef<number | null>(null);
+  // Countdown tracking
+  const countdownDurationRef = useRef<number>(0); // Total countdown duration in seconds
+  const countdownStartTimeRef = useRef<number | null>(null); // When countdown started
+  const countdownPausedTimeRef = useRef<number>(0); // Accumulated paused time in ms
+  const countdownHeldAtRef = useRef<number | null>(null); // When HOLD was clicked
 
   // --- WEBSOCKET ENGINE ---
   const { readyState } = useWebSocket(WS_URL, {
@@ -62,12 +74,13 @@ export function useTelemetry() {
         // 3. Calculate relative runtime (T+ seconds from first packet)
         const runtime = (packet.timestamp - startTimeRef.current) / 1000;
 
-        // 4. Update mission clock ONLY when recording
-        if (recordingStateRef.current === 'recording') {
-          setRuntimeStr(runtime.toFixed(2));
-        }
+        // 4. Track last packet time for lag detection
+        lastPacketTimeRef.current = Date.now();
 
-        // 5. Store telemetry data ONLY when recording (for export/review later)
+        // 5. Mission clock is now updated by smooth interval (see useEffect below)
+        // We no longer update it here directly
+
+        // 6. Store telemetry data ONLY when recording (for export/review later)
         if (recordingStateRef.current === 'recording') {
           const dataPoint: StoredDataPoint = {
             timestamp: packet.timestamp,
@@ -77,7 +90,7 @@ export function useTelemetry() {
           recordedDataRef.current.push(dataPoint);
         }
 
-        // 6. UPDATE CHARTS - Only if NOT stopped (frozen)
+        // 7. UPDATE CHARTS - Only if NOT stopped (frozen)
         if (recordingStateRef.current !== 'stopped') {
           packet.telemetry.forEach((point) => {
             const chart = chartRegistry.current.get(point.id);
@@ -107,6 +120,73 @@ export function useTelemetry() {
     }
   });
 
+  // --- SMOOTH MISSION CLOCK + LAG DETECTION + COUNTDOWN ---
+  useEffect(() => {
+    // T+ Mode: Recording (counting UP)
+    if (recordingState === 'recording') {
+      // Start client-side timer when recording starts
+      if (clientStartTimeRef.current === null) {
+        clientStartTimeRef.current = Date.now();
+      }
+
+      // Update clock smoothly every 100ms
+      const interval = setInterval(() => {
+        if (clientStartTimeRef.current !== null) {
+          const elapsedSeconds = (Date.now() - clientStartTimeRef.current) / 1000;
+
+          // Format as HH:MM:SS.cs (industry standard)
+          const hours = Math.floor(elapsedSeconds / 3600);
+          const minutes = Math.floor((elapsedSeconds % 3600) / 60);
+          const seconds = Math.floor(elapsedSeconds % 60);
+          const centiseconds = Math.floor((elapsedSeconds % 1) * 100);
+
+          const formatted = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centiseconds).padStart(2, '0')}`;
+          setRuntimeStr(formatted);
+
+          // Calculate lag
+          if (lastPacketTimeRef.current !== null) {
+            const lagMs = Date.now() - lastPacketTimeRef.current;
+            setDataLag(lagMs);
+          }
+        }
+      }, 100);
+
+      return () => clearInterval(interval);
+    }
+
+    // T- Mode: Armed countdown (counting DOWN)
+    if (recordingState === 'armed' && !isCountdownHeld) {
+      if (countdownStartTimeRef.current === null) {
+        countdownStartTimeRef.current = Date.now();
+      }
+
+      const interval = setInterval(() => {
+        if (countdownStartTimeRef.current === null) return;
+
+        // Calculate elapsed time (accounting for pauses)
+        const elapsed = (Date.now() - countdownStartTimeRef.current - countdownPausedTimeRef.current) / 1000;
+        const remaining = Math.max(0, countdownDurationRef.current - elapsed);
+
+        // Format as HH:MM:SS.cs
+        const hours = Math.floor(remaining / 3600);
+        const minutes = Math.floor((remaining % 3600) / 60);
+        const seconds = Math.floor(remaining % 60);
+        const centiseconds = Math.floor((remaining % 1) * 100);
+
+        const formatted = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centiseconds).padStart(2, '0')}`;
+        setRuntimeStr(formatted);
+
+        // Auto-switch to T+ recording when countdown reaches zero
+        if (remaining <= 0) {
+          // Automatically start recording
+          startRecording();
+        }
+      }, 100);
+
+      return () => clearInterval(interval);
+    }
+  }, [recordingState, isCountdownHeld]);
+
   // Notify charts when recording state changes
   const notifyChartsOfState = useCallback((state: RecordingState) => {
     chartRegistry.current.forEach((chart) => {
@@ -117,6 +197,57 @@ export function useTelemetry() {
   }, []);
 
   // --- CONTROLS ---
+  const startArming = useCallback((durationSeconds: number) => {
+    // Start T- countdown mode
+    countdownDurationRef.current = durationSeconds;
+    countdownStartTimeRef.current = Date.now();
+    countdownPausedTimeRef.current = 0;
+    countdownHeldAtRef.current = null;
+    setIsCountdownHeld(false);
+
+    const newState = 'armed';
+    recordingStateRef.current = newState;
+    setRecordingState(newState);
+    notifyChartsOfState(newState);
+    console.log('[Countdown] 🎯 ARMED - Countdown started:', durationSeconds, 'seconds');
+  }, []);
+
+  const holdCountdown = useCallback(() => {
+    if (recordingState !== 'armed' || isCountdownHeld) return;
+
+    countdownHeldAtRef.current = Date.now();
+    setIsCountdownHeld(true);
+    console.log('[Countdown] ⏸️ HOLD - Countdown paused');
+  }, [recordingState, isCountdownHeld]);
+
+  const resumeCountdown = useCallback(() => {
+    if (recordingState !== 'armed' || !isCountdownHeld) return;
+    if (countdownHeldAtRef.current === null) return;
+
+    // Accumulate the paused time
+    const pausedDuration = Date.now() - countdownHeldAtRef.current;
+    countdownPausedTimeRef.current += pausedDuration;
+    countdownHeldAtRef.current = null;
+    setIsCountdownHeld(false);
+    console.log('[Countdown] ▶️ RESUME - Countdown resumed');
+  }, [recordingState, isCountdownHeld]);
+
+  const abortCountdown = useCallback(() => {
+    if (recordingState !== 'armed') return;
+
+    // Reset to idle
+    const newState = 'idle';
+    recordingStateRef.current = newState;
+    setRecordingState(newState);
+    setRuntimeStr('00:00:00.00');
+    setIsCountdownHeld(false);
+    countdownStartTimeRef.current = null;
+    countdownPausedTimeRef.current = 0;
+    countdownHeldAtRef.current = null;
+    notifyChartsOfState(newState);
+    console.log('[Countdown] ⏹️ ABORT - Countdown cancelled');
+  }, [recordingState]);
+
   const startRecording = useCallback(() => {
     // Clear all charts and reset to T+0
     chartRegistry.current.forEach((chart) => chart.reset());
@@ -129,7 +260,10 @@ export function useTelemetry() {
     // Reset time reference - next packet will be T+0
     startTimeRef.current = null;
     recordingStartTimeRef.current = null;
-    setRuntimeStr('00:00.00');
+    clientStartTimeRef.current = null;
+    lastPacketTimeRef.current = null;
+    setRuntimeStr('00:00:00.00');
+    setDataLag(null);
 
     const newState = 'recording';
     recordingStateRef.current = newState;
@@ -150,9 +284,12 @@ export function useTelemetry() {
     const newState = 'idle';
     recordingStateRef.current = newState;
     setRecordingState(newState);
-    setRuntimeStr('00:00.00');
+    setRuntimeStr('00:00:00.00');
     recordingStartTimeRef.current = null;
     startTimeRef.current = null;
+    clientStartTimeRef.current = null;
+    lastPacketTimeRef.current = null;
+    setDataLag(null);
     recordedDataRef.current = [];
 
     // Clear all uPlot instances
@@ -198,7 +335,17 @@ export function useTelemetry() {
     connectionStatus: readyState === ReadyState.OPEN ? 'Connected' : 'Disconnected',
     switches,
     runtimeStr,
-    controls: { startRecording, stopRecording, resetRecording },
+    dataLag,
+    isCountdownHeld,
+    controls: {
+      startArming,
+      holdCountdown,
+      resumeCountdown,
+      abortCountdown,
+      startRecording,
+      stopRecording,
+      resetRecording
+    },
     registerChart,
     filterEnabled,
     toggleFilter

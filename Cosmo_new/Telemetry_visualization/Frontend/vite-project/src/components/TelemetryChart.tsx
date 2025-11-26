@@ -14,7 +14,7 @@ interface TelemetryChartProps {
 export interface ChartHandle {
   addDataPoint: (timestamp: number, value: number) => void;
   reset: () => void;
-  setRecordingState: (state: 'idle' | 'recording' | 'stopped') => void;
+  setRecordingState: (state: 'idle' | 'armed' | 'recording' | 'stopped') => void;
 }
 
 export const TelemetryChart = forwardRef<ChartHandle, TelemetryChartProps>(
@@ -28,7 +28,7 @@ export const TelemetryChart = forwardRef<ChartHandle, TelemetryChartProps>(
     // Data Buffers (Mutable for performance)
     const dataRef = useRef<[number[], number[]]>([[], []]);
     const peakRef = useRef<number>(-Infinity);
-    const recordingStateRef = useRef<'idle' | 'recording' | 'stopped'>('idle');
+    const recordingStateRef = useRef<'idle' | 'armed' | 'recording' | 'stopped'>('idle');
 
     // Refs for stats bar elements (performance optimization - avoid innerHTML)
     const statsLabelRef = useRef<HTMLSpanElement>(null);
@@ -393,7 +393,7 @@ export const TelemetryChart = forwardRef<ChartHandle, TelemetryChartProps>(
         }
       },
 
-      setRecordingState: (state: 'idle' | 'recording' | 'stopped') => {
+      setRecordingState: (state: 'idle' | 'armed' | 'recording' | 'stopped') => {
         recordingStateRef.current = state;
         // Force chart to re-evaluate scales
         if (uplotRef.current) {
