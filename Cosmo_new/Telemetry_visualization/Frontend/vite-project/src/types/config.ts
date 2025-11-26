@@ -18,7 +18,7 @@ export interface SensorConfig {
   export interface SwitchConfig {
     id: string;          // Matches backend ID (e.g., 'switch1')
     label: string;       // Human readable name (e.g., 'NOX FILL')
-    group: 'nox' | 'n2' | 'control' | 'safety' | 'unused'; // For visual grouping in the panel
+    group: 'nox' | 'n2' | 'control' | 'safety' | 'servo' | 'unused'; // For visual grouping in the panel
     type: 'valve' | 'safety'; // Determines icon/color logic
   }
   

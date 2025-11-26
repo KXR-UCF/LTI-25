@@ -114,63 +114,85 @@ export class PollingEngine {
     // 2. Fetch Telemetry (Async DB Query)
     const telemetryRow = await fetchLatestTelemetry();
 
-    // 3. Merge & Emit (with deduplication)
+    // 3. Get current switch state (always, even if no telemetry)
+    const currentSwitches = this.switchManager.getState();
+
+    // Override continuity based on telemetry voltage threshold (if available)
     if (telemetryRow) {
-      const currentTimestamp = telemetryRow.timestamp.getTime();
-      const currentSwitches = this.switchManager.getState();
-
-      // Override continuity based on telemetry voltage threshold
-      // continuity_raw is analog voltage - if above threshold, circuit is complete
       currentSwitches.continuity = telemetryRow.continuity_raw > CONTINUITY_THRESHOLD;
-
-      const currentSwitchHash = JSON.stringify(currentSwitches);
-
-      // Check if either telemetry OR switches have changed
-      const telemetryChanged = currentTimestamp !== this.lastBroadcastTimestamp;
-      const switchesChanged = currentSwitchHash !== this.lastSwitchStateHash;
-
-      if (telemetryChanged || switchesChanged) {
-        // Update tracking state
-        this.lastBroadcastTimestamp = currentTimestamp;
-        this.lastSwitchStateHash = currentSwitchHash;
-
-        // Build and broadcast packet
-        const packet: TelemetryPacket = {
-          timestamp: currentTimestamp,
-          telemetry: [
-            // IDs mirror database column names exactly
-            { id: 'pt1', value: telemetryRow.pt1 },
-            { id: 'pt2', value: telemetryRow.pt2 },
-            { id: 'pt3', value: telemetryRow.pt3 },
-            { id: 'pt4', value: telemetryRow.pt4 },
-            { id: 'pt5', value: telemetryRow.pt5 },
-            { id: 'pt6', value: telemetryRow.pt6 },
-            { id: 'pt7', value: telemetryRow.pt7 },
-            { id: 'pt8', value: telemetryRow.pt8 },
-            { id: 'lc1', value: telemetryRow.lc1 },
-            { id: 'lc2', value: telemetryRow.lc2 },
-            { id: 'lc3', value: telemetryRow.lc3 },
-            { id: 'lc4', value: telemetryRow.lc4 },
-            { id: 'lc_net_force', value: telemetryRow.lc_net_force },
-            { id: 'tc1', value: telemetryRow.tc1 },
-            { id: 'tc2', value: telemetryRow.tc2 },
-          ],
-          switches: currentSwitches,
-        };
-
-        this.onDataCallback(packet);
-        this.totalBroadcasts++;
-      } else {
-        // Skip duplicate - neither telemetry nor switches changed
-        this.totalDuplicatesSkipped++;
-      }
     }
 
-    // 4. Calculate Drift & Schedule Next
+    // SAFETY: If abort is engaged, turn off all valves and launch key
+    if (currentSwitches.abort === true) {
+      // Check if this is the first time abort is engaged (to log once)
+      const wasAbortEngaged = this.lastSwitchStateHash.includes('"abort":true');
+      if (!wasAbortEngaged) {
+        console.log('🚨 ABORT ENGAGED - Forcing all switches and launch key to OFF');
+      }
+
+      currentSwitches.switch1 = false;
+      currentSwitches.switch2 = false;
+      currentSwitches.switch3 = false;
+      currentSwitches.switch4 = false;
+      currentSwitches.switch5 = false;
+      currentSwitches.switch6 = false;
+      currentSwitches.switch7 = false;
+      currentSwitches.switch8 = false;
+      currentSwitches.switch9 = false;
+      currentSwitches.switch10 = false;
+      currentSwitches.launchKey = false;
+    }
+
+    const currentSwitchHash = JSON.stringify(currentSwitches);
+
+    // 4. Check what changed
+    const telemetryChanged = telemetryRow && (telemetryRow.timestamp.getTime() !== this.lastBroadcastTimestamp);
+    const switchesChanged = currentSwitchHash !== this.lastSwitchStateHash;
+
+    // 5. Broadcast if EITHER telemetry OR switches changed
+    if (telemetryChanged || switchesChanged) {
+      // Update tracking state
+      if (telemetryRow) {
+        this.lastBroadcastTimestamp = telemetryRow.timestamp.getTime();
+      }
+      this.lastSwitchStateHash = currentSwitchHash;
+
+      // Build and broadcast packet
+      const packet: TelemetryPacket = {
+        timestamp: telemetryRow ? telemetryRow.timestamp.getTime() : this.lastBroadcastTimestamp,
+        telemetry: telemetryRow ? [
+          // IDs mirror database column names exactly
+          { id: 'pt1', value: telemetryRow.pt1 },
+          { id: 'pt2', value: telemetryRow.pt2 },
+          { id: 'pt3', value: telemetryRow.pt3 },
+          { id: 'pt4', value: telemetryRow.pt4 },
+          { id: 'pt5', value: telemetryRow.pt5 },
+          { id: 'pt6', value: telemetryRow.pt6 },
+          { id: 'pt7', value: telemetryRow.pt7 },
+          { id: 'pt8', value: telemetryRow.pt8 },
+          { id: 'lc1', value: telemetryRow.lc1 },
+          { id: 'lc2', value: telemetryRow.lc2 },
+          { id: 'lc3', value: telemetryRow.lc3 },
+          { id: 'lc4', value: telemetryRow.lc4 },
+          { id: 'lc_net_force', value: telemetryRow.lc_net_force },
+          { id: 'tc1', value: telemetryRow.tc1 },
+          { id: 'tc2', value: telemetryRow.tc2 },
+        ] : [],
+        switches: currentSwitches,
+      };
+
+      this.onDataCallback(packet);
+      this.totalBroadcasts++;
+    } else {
+      // Skip duplicate - neither telemetry nor switches changed
+      this.totalDuplicatesSkipped++;
+    }
+
+    // 6. Calculate Drift & Schedule Next
     const endTime = performance.now();
     const executionTime = endTime - startTime;
     const targetInterval = 16.67; // 60Hz
-    
+
     // If we took 5ms, wait 11.67ms. If we took 20ms, wait 0ms (run immediately).
     const nextDelay = Math.max(0, targetInterval - executionTime);
 

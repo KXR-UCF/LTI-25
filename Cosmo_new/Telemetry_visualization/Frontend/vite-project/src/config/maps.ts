@@ -44,11 +44,13 @@ const ALL_SWITCHES: SwitchConfig[] = [
   { id: 'switch7', label: 'N2 VENT', group: 'n2', type: 'valve' },
   { id: 'switch8', label: 'N2 RELIEF', group: 'n2', type: 'valve' },
 
+  // Servo Control
+  { id: 'switch9', label: 'SERVO PWR', group: 'servo', type: 'valve' },
+  { id: 'switch10', label: 'SERVO MOVE', group: 'servo', type: 'valve' },
+
   // Unused (hidden in UI)
   { id: 'switch4', label: 'UNUSED 4', group: 'unused', type: 'valve' },
   { id: 'switch5', label: 'UNUSED 5', group: 'unused', type: 'valve' },
-  { id: 'switch9', label: 'UNUSED 9', group: 'unused', type: 'valve' },
-  { id: 'switch10', label: 'UNUSED 10', group: 'unused', type: 'valve' },
 ];
 
 // Default dashboard config with all sensors
