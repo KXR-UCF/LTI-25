@@ -12,8 +12,8 @@ export async function fetchLatestTelemetry(): Promise<RawTelemetryRow | null> {
     const result = await sql<RawTelemetryRow[]>`
       SELECT
         w1.timestamp,
-        w1.pt01, w1.pt02, w1.pt03, w1.pt04,
-        w1.pt05, w1.pt06, w1.pt07, w1.pt08,
+        w1.pt1, w1.pt2, w1.pt3, w1.pt4,
+        w1.pt5, w1.pt6, w1.pt7, w1.pt8,
         w1.continuity_raw,
         w2.lc1, w2.lc2, w2.lc3, w2.lc4,
         w2.lc_net_force,
