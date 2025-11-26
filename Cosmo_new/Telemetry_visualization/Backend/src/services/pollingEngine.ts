@@ -22,6 +22,10 @@ export class PollingEngine {
   private totalDuplicatesSkipped: number = 0;
   private totalBroadcasts: number = 0;
 
+  // DEBUG: Poll rate tracking
+  private lastPollTime: number = 0;
+  private pollCount: number = 0;
+
   constructor(onData: (packet: TelemetryPacket) => void) {
     this.onDataCallback = onData;
     this.switchManager = new SwitchStateManager();
@@ -108,11 +112,29 @@ export class PollingEngine {
 
     const startTime = performance.now();
 
+    // DEBUG: Track actual poll rate
+    this.pollCount++;
+    if (this.pollCount % 60 === 0) {
+      const now = performance.now();
+      if (this.lastPollTime > 0) {
+        const actualHz = 60 / ((now - this.lastPollTime) / 1000);
+        console.log(`[Poll Rate] Actual: ${actualHz.toFixed(1)} Hz (target: 60 Hz)`);
+      }
+      this.lastPollTime = now;
+    }
+
     // 1. Read Switches (Fast, Synchronous, Non-blocking)
     this.readPipe();
 
     // 2. Fetch Telemetry (Async DB Query)
+    const queryStart = performance.now();
     const telemetryRow = await fetchLatestTelemetry();
+    const queryTime = performance.now() - queryStart;
+
+    // DEBUG: Log query performance every 60 polls (~1 second)
+    if (Math.random() < 0.0167) { // ~1/60 chance
+      console.log(`[Query Perf] Took ${queryTime.toFixed(2)}ms | Timestamp: ${telemetryRow?.timestamp || 'null'}`);
+    }
 
     // 3. Get current switch state (always, even if no telemetry)
     const currentSwitches = this.switchManager.getState();

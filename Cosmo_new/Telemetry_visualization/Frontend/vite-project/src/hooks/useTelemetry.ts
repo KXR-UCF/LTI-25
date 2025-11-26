@@ -48,6 +48,9 @@ export function useTelemetry() {
       try {
         const packet: TelemetryPacket = JSON.parse(event.data);
 
+        // DEBUG: Log packet arrival rate
+        console.log('Received packet at:', new Date().toISOString(), 'timestamp:', packet.timestamp);
+
         // 1. Always update switches
         setLatestPacket(packet);
 

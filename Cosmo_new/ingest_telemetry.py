@@ -254,13 +254,13 @@ def generate_sample_data(elapsed_time, duration_seconds):
     return wanda1_data, wanda2_data
 
 
-def ingest_telemetry(duration_seconds, batch_size=10):
+def ingest_telemetry(duration_seconds, batch_size=1):
     """
     Ingest telemetry data at 60 samples per second into wanda1 and wanda2 tables.
 
     Args:
         duration_seconds: How long to run the ingestion (seconds)
-        batch_size: Number of rows to batch before flushing (default: 10, i.e., ~167ms)
+        batch_size: Number of rows to batch before flushing (default: 1 for real-time)
     """
     total_samples = duration_seconds * SAMPLES_PER_SECOND
     samples_sent = 0
@@ -367,8 +367,8 @@ def main():
     parser.add_argument(
         '--batch-size',
         type=int,
-        default=10,
-        help='Number of rows to batch before flushing (default: 10)'
+        default=1,
+        help='Number of rows to batch before flushing (default: 1 for real-time)'
     )
 
     args = parser.parse_args()
