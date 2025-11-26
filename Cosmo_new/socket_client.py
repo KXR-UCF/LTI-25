@@ -3,8 +3,22 @@ import serial
 import time
 import os
 
+controller_pi_address = "192.168.1.30"
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect(("192.168.1.30", 9600))
+
+start_time = time.time()
+connected = False
+print(f"Attempting to connect to {controller_pi_address}")
+while not connected:
+    try:
+        s.connect((controller_pi_address, 9600))
+        connected = True
+    except OSError as e:
+        program_time = time.time() - start_time
+        print(f"{program_time:<5.2f}s Failed to connect... Attempting to connect")
+        time.sleep(1)
+
+# s.connect(("192.168.1.30", 9600))
 ser = serial.Serial("/dev/ttyACM0", 9600)
 
 # Create named pipe for sharing switch states with server.js
