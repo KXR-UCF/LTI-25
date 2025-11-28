@@ -8,11 +8,11 @@ import sys
 from collections import deque
 import time
 
-DIFFERENTIAL = False
+DIFFERENTIAL = True
 ADC_ID = 1
 
 VREF = 2.5
-PGA = 1
+PGA = 64
 
 # Pin definition (GPIO)    
 if ADC_ID == 1:
@@ -24,15 +24,15 @@ else:
     CS_PIN   = 7
     DRDY_PIN = 23
 
-scale_factors = [3776.272949, 6498.5830157, 1, 1, 1, 1, 1, 1]
-bias_factors = [-1562.725464, -2653.93335, 0, 0, 0, 0, 0, 0]
-history = [deque(maxlen=50) for _ in range(8)]
+scale_factors = [1, 1, 1, 1, 1, 1, 1, 1]
+bias_factors = [0, 0, 0, 0, 0, 0, 0, 0]
+history = [deque(maxlen=500) for _ in range(8)]
 loop_time = deque(maxlen=10)
 
 try:
     ADC = ADS1256.ADS1256(RST_PIN, CS_PIN, DRDY_PIN)
     ADC.init()
-    ADC.configADC(0,0xF0)
+    ADC.configADC(6,0xC0)
     
     if not DIFFERENTIAL:
         ADC.setMode(0)

@@ -221,7 +221,7 @@ class ADS1256:
         if(self.scan_mode == 0):# 0  Single-ended input  8 channel1 Differential input  4 channe
             if(Channel>=8):
                 return 0
-            print(self.scan_mode)
+            # print(self.scan_mode)
             self.setChannel(Channel)
             self.writeCmd(CMD['CMD_SYNC'])
             # self.delay_ms(10)
