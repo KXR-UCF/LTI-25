@@ -3,6 +3,8 @@
 
 """KXR file for handling sensors/transducers connected to the KXR ADS1256 Pi hat"""
 
+#TODO change tare to be in ram and have a zero value that is set in the config file
+
 from ADC import ADS1256
 import numpy as np
 import yaml
@@ -90,8 +92,7 @@ class Sensor:
             sensor_voltage (float): the voltage (0-5V) returned from the sensor
         """
         adc = _ADCs[self.adc_id]
-        sensor_value = adc.getChannelValue(self.channel_id)   # gets the sensor value
-        sensor_voltage = sensor_value * 5.0 / 0x7fffff        # converts the digital value to volts
+        sensor_voltage = adc.getChannelVoltage(self.channel_id) # gets the sensor voltage
         return sensor_voltage
 
 
@@ -166,7 +167,6 @@ class PressureTransducer(Sensor):
         if self.scale == None:
             self.scale = 1
             print(f"Warning no scale set for loadcell <{self.name}> check config file")
-
 
     def get_pressure(self):
         pressure = self.get_voltage()*self.scale + self.tare
