@@ -248,10 +248,16 @@ class ADS1256:
         
     # returns all values by channel
     # automatically handles differential mode through getChannelValue
-    def getAll(self):
+    def getAllValues(self):
         ADC_Value = [0,0,0,0,0,0,0,0]
         for i in range(0,8,1):
             ADC_Value[i] = self.getChannelValue(i)
         return ADC_Value
+    
+    def getAllVoltages(self):
+        ADC_Voltage = [0,0,0,0,0,0,0,0]
+        for i in range(0,8,1):
+            ADC_Voltage[i] = self.getChannelVoltage(i)
+        return ADC_Voltage
 ### END OF FILE ###
 
