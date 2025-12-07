@@ -162,6 +162,8 @@ class ADS1256:
         
         self.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
         self.delay_ms(1) 
+        self.gain = 2 ** gain
+
 
 
     def setChannel(self, Channel):
@@ -238,6 +240,11 @@ class ADS1256:
             self.delay_ms(10)
             Value = self.read_ADC_Data()
         return Value
+    
+    def getChannelVoltage(self, channel, Vref=2.5):
+        value = self.getChannelValue(channel)
+        voltage = (value * 5.0 / 0x7fffff) / self.gain
+        return voltage
         
     # returns all values by channel
     # automatically handles differential mode through getChannelValue
