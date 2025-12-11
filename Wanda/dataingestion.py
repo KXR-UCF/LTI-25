@@ -12,6 +12,10 @@ import socket
 import subprocess
 import re
 
+# Target sampling rate for smooth 60 Hz frontend updates
+SAMPLES_PER_SECOND = 60
+SAMPLE_INTERVAL = 1.0 / SAMPLES_PER_SECOND  # ~16.67ms per sample
+
 def get_cpu_temp():
         temp_output = subprocess.check_output(["vcgencmd", "measure_temp"]).decode()
         match = re.search(r"temp=(\d+\.?\d*)'C", temp_output)
@@ -24,8 +28,7 @@ hostname = socket.gethostname()
 
 conf = (
     'tcp::addr=localhost:9009;'  # Changed from http to tcp
-    'auto_flush=on;'
-    'auto_flush_rows=1;'
+    'auto_flush=off;'  # Manual flush for better control at 60Hz
 )
 
 rows = [
@@ -64,20 +67,21 @@ questdb_times = []
 loop_times = []
 
 try:
-    with Sender.from_conf(conf) as sender: # Allows for QuestDB insertion
+    with Sender.from_conf(conf) as sender:
 
         sender.row(table_name=hostname, at=datetime.now())
+        sender.flush()
 
-        # st = time.time()
         print("Connected to QuestDB")
+        print(f"Target: {SAMPLES_PER_SECOND} SPS | Interval: {SAMPLE_INTERVAL*1000:.2f}ms")
         start_time = time.time()
+        next_sample_time = start_time
         print("Sending Data")
+
         while True:
             loop_start = time.time()
 
-            # cpu_temp = get_cpu_temp()
-
-            # get load cell values
+            # get sensor values
             adc_start = time.time()
 
             columns = {}
@@ -91,24 +95,36 @@ try:
 
             adc_times.append(time.time() - adc_start)
 
-
-            # send data and time to questDB
+            # send to questDB
             questdb_start = time.time()
             sender.row(
                 table_name=hostname,
                 columns=columns,
                 at=TimestampNanos.now()
             )
+            sender.flush()
             row_count += 1
             questdb_times.append(time.time() - questdb_start)
 
+            # report every second
             current_time = time.time()
-            if current_time - last_report_time > 1:
+            if current_time - last_report_time >= 1.0:
                 total_RPS = row_count / (current_time - start_time)
-                print(f"Rate: {total_RPS:.1f} RPS")
+                print(f"Rate: {total_RPS:.1f} SPS")
                 last_report_time = current_time
-            
+
             loop_times.append(time.time() - loop_start)
+
+            # 60Hz timing control
+            next_sample_time += SAMPLE_INTERVAL
+            sleep_time = next_sample_time - time.time()
+
+            if sleep_time > 0:
+                time.sleep(sleep_time)
+            elif sleep_time < -SAMPLE_INTERVAL:
+                # falling behind, resync
+                print(f"Warning: Behind by {-sleep_time*1000:.1f}ms")
+                next_sample_time = time.time()
 
 
 except KeyboardInterrupt:

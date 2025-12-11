@@ -208,8 +208,8 @@ class ADS1256:
         self.waitDRDY()
         self.digital_write(self.cs_pin, GPIO.LOW)#cs  0
         self.spi_writebyte([CMD['CMD_RDATA']])
-        self.delay_ms(10)
-
+        # Per ADS1256 datasheet (t6): only 50*τCLKIN (~6.5μs) needed after RDATA
+        # The SPI transaction itself takes longer than this, so no delay required
         buf = self.spi_readbytes(3)
         self.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
         read = (buf[0]<<16) & 0xff0000
@@ -235,9 +235,11 @@ class ADS1256:
                 return 0
             self.setDiffChannel(Channel)
             self.writeCmd(CMD['CMD_SYNC'])
-            self.delay_ms(10)
+            # Per ADS1256 datasheet (t11): only 4*τCLKIN (~0.5μs) needed after SYNC
+            # The SPI transaction overhead already exceeds this, so no delay required
             self.writeCmd(CMD['CMD_WAKEUP'])
-            self.delay_ms(10)
+            # Per ADS1256 datasheet: no delay needed after WAKEUP
+            # waitDRDY() in read_ADC_Data() handles conversion timing
             Value = self.read_ADC_Data()
         return Value
     
