@@ -3,24 +3,20 @@
 process.env.TZ = 'UTC';
 
 import postgres from 'postgres';
-import dotenv from 'dotenv';
 
-// Load environment variables
-dotenv.config();
-
-// 2. Define connection options with pooling configurations
+// 2. Define connection options with hardcoded credentials
 const sql = postgres({
-  host: process.env.DB_HOST || '127.0.0.1',
-  port: Number(process.env.DB_PORT) || 8812,
-  username: process.env.DB_USER || 'admin',
-  password: process.env.DB_PASS || 'quest',
-  database: process.env.DB_NAME || 'qdb',
+  host: '127.0.0.1',
+  port: 8812,
+  username: 'admin',
+  password: 'quest',
+  database: 'qdb',
 
   // Pooling & Reliability Settings
   max: 10,                // Max number of connections (NFR-SC1 support)
   idle_timeout: 30,       // Close idle connections after 30s
   connect_timeout: 10,    // Fail fast if DB is down (10s)
-  
+
   // Transform parameter names (optional, but good for consistency)
   transform: {
     undefined: null,

@@ -5,14 +5,14 @@
 export interface RawTelemetryRow {
     timestamp: Date;
     // From wanda1 table
-    pt01: number;
-    pt02: number;
-    pt03: number;
-    pt04: number;
-    pt05: number;
-    pt06: number;
-    pt07: number;
-    pt08: number;
+    pt1: number;
+    pt2: number;
+    pt3: number;
+    pt4: number;
+    pt5: number;
+    pt6: number;
+    pt7: number;
+    pt8: number;
     continuity_raw: number;
     // From wanda2 table
     lc1: number;
