@@ -10,9 +10,10 @@ interface SwitchPanelProps {
 export function SwitchPanel({ config, values }: SwitchPanelProps) {
   // Group switches by their system
   const groups = {
+    safety: config.filter(s => s.group === 'safety'),
     nox: config.filter(s => s.group === 'nox'),
     n2: config.filter(s => s.group === 'n2'),
-    safety: config.filter(s => s.group === 'safety'),
+    servo: config.filter(s => s.group === 'servo'),
     // Don't show unused switches
   };
 
@@ -67,9 +68,10 @@ export function SwitchPanel({ config, values }: SwitchPanelProps) {
   return (
     <div className="w-full bg-slate-100/80 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800 px-4 py-3">
       <div className="flex items-center gap-6 flex-wrap">
+        {renderGroup("SAFETY", groups.safety)}
         {renderGroup("N2O", groups.nox)}
         {renderGroup("NITROGEN", groups.n2)}
-        {renderGroup("SAFETY", groups.safety)}
+        {renderGroup("SERVO", groups.servo)}
       </div>
     </div>
   );
