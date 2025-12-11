@@ -56,6 +56,8 @@ export function useTelemetry() {
   // --- WEBSOCKET ENGINE ---
   const { readyState } = useWebSocket(WS_URL, {
     shouldReconnect: () => true, // Auto-reconnect
+    reconnectAttempts: Infinity, // Never stop trying
+    reconnectInterval: 1000, // Try every 1 second
     onMessage: (event) => {
       try {
         const packet: TelemetryPacket = JSON.parse(event.data);
