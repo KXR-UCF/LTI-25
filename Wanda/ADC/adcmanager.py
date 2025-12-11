@@ -158,18 +158,18 @@ class PressureTransducer(Sensor):
         super().__init__(sensor_name)
         _ADCs[self.adc_id].setMode(0)
 
-        self.tare = config["devices"][LoadCell.sensor_type][sensor_name]["tare"]
+        self.zero = config["devices"][PressureTransducer.sensor_type][sensor_name]["tare"]
         if self.zero == None:
             self.zero = 0
             # print(f"Warning no tare set for loadcell <{self.name}> check config file")
 
-        self.scale = config["devices"][LoadCell.sensor_type][sensor_name]["scale"]
+        self.scale = config["devices"][PressureTransducer.sensor_type][sensor_name]["scale"]
         if self.scale == None:
             self.scale = 1
             print(f"Warning no scale set for loadcell <{self.name}> check config file")
 
     def get_pressure(self):
-        pressure = self.get_voltage()*self.scale + self.tare
+        pressure = self.get_voltage()*self.scale + self.zeros
         return pressure
 
 
