@@ -26,7 +26,7 @@ else:
 
 scale_factors = [1, 1, 1, 1, 1, 1, 1, 1]
 bias_factors = [0, 0, 0, 0, 0, 0, 0, 0]
-history = [deque(maxlen=500) for _ in range(8)]
+# history = [deque(maxlen=500) for _ in range(8)]
 loop_time = deque(maxlen=10)
 
 try:
@@ -40,30 +40,13 @@ try:
     while True:
         start_time = time.time()
         voltages = ADC.getAllVoltages()
-        # voltages = np.array(ADC_Value) * 5.0 / 0x7fffff
-        # voltages = np.array(ADC_Value) * (2*VREF/PGA) / 0x7fffff
-
-        # sys.stdout.write(f"\033[1;1H")
-        # sys.stdout.write("\033[K")
-        # sys.stdout.write(f"{'SPS:':<10} {len(loop_time)/np.sum(loop_time):.2f}")
-        #
-        # sys.stdout.write(f"\033[2;1H")
-        # sys.stdout.write("\033[K")
-        # sys.stdout.write(f"{f'Channel':<10} {'Voltage'}")
         output_line = ''
         for i, voltage in enumerate(voltages):
-            pressure = (voltage * scale_factors[i]) + bias_factors[i]
+            value = (voltage * scale_factors[i]) + bias_factors[i]
             if DIFFERENTIAL and i > 3:
                 break
-            history[i].append(pressure)
-            avg_pressure = np.mean(history[i])
-            output_line = output_line + f" {i}: {avg_pressure:<10.6f}"
+            output_line = output_line + f" {i}: {value:<10.6f}"
         print(output_line)
-        #     sys.stdout.write(f"\033[{i+3};1H")
-        #     sys.stdout.write("\033[K")
-        #     sys.stdout.write(output_line)
-        # sys.stdout.flush()
-        # time.sleep(0.1)
 
         loop_time.append(time.time() - start_time)
 
