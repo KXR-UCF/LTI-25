@@ -6,54 +6,27 @@ import numpy as np
 from questdb.ingress import Sender, Protocol, TimestampNanos
 from datetime import datetime
 
-import json
 import time
 import socket
-import subprocess
-import re
-
-def get_cpu_temp():
-        temp_output = subprocess.check_output(["vcgencmd", "measure_temp"]).decode()
-        match = re.search(r"temp=(\d+\.?\d*)'C", temp_output)
-        if match:
-            return float(match.group(1))
-        return None
-
 
 hostname = socket.gethostname()
 
 conf = (
-    'tcp::addr=localhost:9009;'  # Changed from http to tcp
-    'auto_flush=on;'
-    'auto_flush_rows=1;'
+    'tcp::addr=localhost:9009;'
+    'auto_flush=off;'
+    # 'auto_flush_rows=1;'
 )
 
-rows = [
-    "cell1_force",
-    "cell2_force",
-    "cell3_force",
-    "net_force",
-    "pressure_pt1",
-    "pressure_pt2",
-    "pressure_pt3",
-    "pressure_pt4",
-    "pressure_pt5",
-    "pressure_pt6",
-    "weight_load_cell",
-    "chamber_temp",
-    "nozzle_temp"
-]
+sensors = []
+for sensor_name in adcmanager.config["sensors"]:
+     sensors.append(adcmanager.Sensor(sensor_name))
 
-# SWITCH_STATE_FILENAME = "switch_states.json"
-# CONFIG_FILE_NAME = adcmanager.CONFIG_FILE_NAME
+net_force_measured = False
+load_cells_for_net_force = ['lc1', 'lc2', 'lc3']
+for sensor in sensors:
+    if sensor.name in load_cells_for_net_force:
+        net_force_measured = True
 
-load_cells = []
-for i in range(4):
-     load_cells.append(adcmanager.LoadCell(f"lc{i+1}"))
-
-pts = []
-for i in range(8):
-     pts.append(adcmanager.PressureTransducer(f"pt{i+1}"))
 
 row_count = 0
 start_time = 0
@@ -75,22 +48,21 @@ try:
         while True:
             loop_start = time.time()
 
-            # cpu_temp = get_cpu_temp()
-
-            # get load cell values
+            # get sensor values from ADC
             adc_start = time.time()
-
+            lc_net_force = 0
             columns = {}
-            for load_cell in load_cells:
-                 columns[load_cell.name] = load_cell.get_force()
-            for pt in pts:
-                 columns[pt.name] = pt.get_pressure()
+            for sensor in sensors:
+                columns[sensor.name] = sensor.get_calibrated_value_linear()                
+                if sensor.name in load_cells_for_net_force:
+                    lc_net_force += columns[sensor.name]
 
-            if len(load_cells) > 0:
-                 columns['lc_net_force'] = columns['lc1'] + columns['lc2'] + columns['lc3']
+            # if netforce load cells exist save netforce
+            if net_force_measured:
+                columns['lc_net_force'] = lc_net_force
 
+            # save time to get data this iteration
             adc_times.append(time.time() - adc_start)
-
 
             # send data and time to questDB
             questdb_start = time.time()
@@ -99,9 +71,12 @@ try:
                 columns=columns,
                 at=TimestampNanos.now()
             )
+            # flush row to questdb
+            sender.flush()
             row_count += 1
             questdb_times.append(time.time() - questdb_start)
-
+            
+            # get time stats
             current_time = time.time()
             if current_time - last_report_time > 1:
                 total_RPS = row_count / (current_time - start_time)

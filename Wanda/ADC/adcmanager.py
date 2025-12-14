@@ -44,6 +44,8 @@ for adc in ENABLED_ADCS:
     new_ADC = ADS1256.ADS1256(rst_pin, cs_pin, drdy_pin)
     new_ADC.init()
     new_ADC.configADC(ADS1256.GAIN_E[gain], ADS1256.DRATE_E[data_rate])
+    if not config[f"ADC{adc}"]["differential"]:
+        new_ADC.setMode(0)
     _ADCs[adc] = (new_ADC)
     print(f"ADC{adc} Initialized")
 
@@ -83,7 +85,18 @@ class Sensor:
 
         if not sensor_found:
             print(f"Error: No Sensor with name: {sensor_name} found --> Check config file {CONFIG_FILE_NAME}")
+            return
             # might raise some exception here
+
+        self.zero = config["sensors"][sensor_name]["zero"]
+        if self.zero == None:
+            self.zero = 0
+            print(f"Warning no zero set for sensor <{self.name}> check config file")
+
+        self.scale = config["sensors"][sensor_name]["scale"]
+        if self.scale == None:
+            self.scale = 1
+            print(f"Warning no scale set for sensor <{self.name}> check config file")
 
     def get_voltage(self) -> float:
         """Gets the voltages of a sensor
@@ -94,88 +107,33 @@ class Sensor:
         adc = _ADCs[self.adc_id]
         sensor_voltage = adc.getChannelVoltage(self.channel_id) # gets the sensor voltage
         return sensor_voltage
-
-
-class LoadCell(Sensor):
-    """Child class of Sensor, handles extra functions for load cells"""
-    sensor_type = "load_cells"
-
-    def __init__(self, sensor_name):
-        super().__init__(sensor_name)
-        self.tare = config["devices"][LoadCell.sensor_type][sensor_name]["tare"]
-        if self.tare == None:
-            self.tare = 0
-            # print(f"Warning no tare set for loadcell <{self.name}> check config file")
-
-        self.scale = config["devices"][LoadCell.sensor_type][sensor_name]["scale"]
-        if self.scale == None:
-            self.scale = 1
-            print(f"Warning no scale set for loadcell <{self.name}> check config file")
-
-    def set_tare(self, tare: float):
-        """Set tare and write it to the config file
-        
-        Args:
-            tare (float): the tare of this load cell to be set and written to the config file
-        """
-        self.tare = tare
-        self.write_tare_to_config()
-
-    def calibrate_tare(self, num_samples: int):
-        """Calibrates the tare of the load cell from several samples
-        
-        Args:
-            num_samples (int): number of samples to average for the tare
-        """
-        sample_arr = np.array([])
-        print(f"Load Cell <{self.name}> Calibrating Tare")
-        self.tare = 0
-        for i in range(num_samples):
-            sample_arr = np.append(sample_arr, self.get_force())
-        self.set_tare(-1 * np.mean(sample_arr))
-        print(f"Load Cell <{self.name}> Tare Calibrated")
-
-    def write_tare_to_config(self):
-        """Writes the tare to the config file"""
-        config["devices"][LoadCell.sensor_type][self.name]["tare"] = float(self.tare)
-        with open(CONFIG_FILE_NAME, 'w') as file:
-            yaml.safe_dump(config, file, default_flow_style=False, sort_keys=False)
-        
-    def get_force(self) -> float:
-        """Gets the force using the tare and scale from the config file
+    
+    def get_calibrated_value_linear(self):
+        """Gets the calibrated value using the zero and scale from the config file
 
         Returns:
-            force (float): the force applied to the load cell
+            cal_value (float): the calibrated value from the sensor
         """
-        force = self.get_voltage()*self.scale + self.tare
-        return force
+        cal_value = self.get_voltage()*self.scale + self.zero
+        return cal_value
 
+    # def calibrate_tare(self, num_samples: int):
+    #     """Calibrates the tare of the load cell from several samples
+        
+    #     Args:
+    #         num_samples (int): number of samples to average for the tare
+    #     """
+    #     sample_arr = np.array([])
+    #     print(f"Load Cell <{self.name}> Calibrating Tare")
+    #     self.tare = 0
+    #     for i in range(num_samples):
+    #         sample_arr = np.append(sample_arr, self.get_force())
+    #     self.set_tare(-1 * np.mean(sample_arr))
+    #     print(f"Load Cell <{self.name}> Tare Calibrated")
 
-class PressureTransducer(Sensor):
-    sensor_type = "pressure_transducers"
-
-    def __init__(self, sensor_name):
-        super().__init__(sensor_name)
-        _ADCs[self.adc_id].setMode(0)
-
-        self.tare = config["devices"][LoadCell.sensor_type][sensor_name]["tare"]
-        if self.zero == None:
-            self.zero = 0
-            # print(f"Warning no tare set for loadcell <{self.name}> check config file")
-
-        self.scale = config["devices"][LoadCell.sensor_type][sensor_name]["scale"]
-        if self.scale == None:
-            self.scale = 1
-            print(f"Warning no scale set for loadcell <{self.name}> check config file")
-
-    def get_pressure(self):
-        pressure = self.get_voltage()*self.scale + self.tare
-        return pressure
-
-
-class ThermoCouple(Sensor):
-    sensor_type = "thermo_couples"
-
-    def __init__(self, sensor_name):
-        super().__init__(sensor_name)
-
+    # def write_tare_to_config(self):
+    #     """Writes the tare to the config file"""
+    #     config["devices"][LoadCell.sensor_type][self.name]["tare"] = float(self.tare)
+    #     with open(CONFIG_FILE_NAME, 'w') as file:
+    #         yaml.safe_dump(config, file, default_flow_style=False, sort_keys=False)
+        
