@@ -9,9 +9,9 @@
 SESSION="cosmo"
 
 # Paths
-SOCKET_PATH="cosmo/command_client"
-BACKEND_PATH="cosmo/ground_station/backend"
-FRONTEND_PATH="cosmo/ground_station/new_frontend/my-app"
+SOCKET_PATH="Cosmo_new"
+BACKEND_PATH="Cosmo_new/Telemetry_visualization/Backend"
+FRONTEND_PATH="Cosmo_new/Telemetry_visualization/Frontend/vite-project"
 
 cleanup() {
     echo "Stopping system..."
