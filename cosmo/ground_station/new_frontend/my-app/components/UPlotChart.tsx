@@ -42,6 +42,16 @@ export default function UPlotChart({ data, options, onCreate, onDelete }: UPlotC
 
     plotInstance.current = new uPlot(responsiveOptions, data, containerRef.current);
 
+    // Add double-click handler to reset y-axis to original range
+    const chart = plotInstance.current;
+    const handleDoubleClick = () => {
+      const yScale = responsiveOptions.scales?.y;
+      if (yScale && 'range' in yScale && Array.isArray(yScale.range)) {
+        chart.setScale('y', { min: yScale.range[0], max: yScale.range[1] });
+      }
+    };
+    chart.root.addEventListener('dblclick', handleDoubleClick);
+
     if (onCreate) {
       onCreate(plotInstance.current);
     }
@@ -63,6 +73,29 @@ export default function UPlotChart({ data, options, onCreate, onDelete }: UPlotC
       plotInstance.current.setData(data);
     }
   }, [data]);
+
+  useEffect(() => {
+    // Handle window resize to dynamically resize charts
+    const handleResize = () => {
+      if (!containerRef.current || !plotInstance.current) return;
+
+      const width = containerRef.current.offsetWidth * 0.95;
+      const height = containerRef.current.offsetHeight * 0.95;
+
+      if (width > 0 && height > 0) {
+        plotInstance.current.setSize({
+          width: Math.floor(width),
+          height: Math.floor(height),
+        });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   return <div ref={containerRef} className="w-full h-full flex items-center justify-center" />;
 }
