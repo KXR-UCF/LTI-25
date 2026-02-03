@@ -5,8 +5,8 @@ Description=Runs Production Start
 Type=oneshot
 RemainAfterExit=true
 User=kxr
-WorkingDirectory=/home/LTI-25
-ExecStart=/usr/bin/bash /home/LTI-25/Systemd/startCosmo.sh
+WorkingDirectory=/home/kxr/LTI-25
+ExecStart=/usr/bin/bash /home/kxr/LTI-25/Systemd/startCosmo.sh
 
 [Install]
 WantedBy=multi-user.target
