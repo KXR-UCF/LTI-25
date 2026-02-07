@@ -11,8 +11,8 @@ export function SensorGrid({ config, registry }: SensorGridProps) {
   // Determine grid layout based on number of sensors
   const sensorCount = config.sensors.length;
 
-  // Detect if this is "all" view (15 sensors) for bento box layout
-  const isBentoLayout = sensorCount === 15;
+  // Detect if this is "all" view (16 sensors) for bento box layout
+  const isBentoLayout = sensorCount === 16;
 
   // Section header component
   const SectionHeader = ({ title, row }: { title: string; row: number }) => (
@@ -28,10 +28,10 @@ export function SensorGrid({ config, registry }: SensorGridProps) {
   );
 
   // Explicit grid positioning for bento box (all sensors view)
-  // NEW LAYOUT: 4 cols × 10 rows with headers
+  // NEW LAYOUT: 4 cols × 11 rows with headers
   const getBentoPosition = (sensorId: string) => {
     const positions: Record<string, string> = {
-      // === PRESSURE TRANSDUCERS (Rows 2-3) ===
+      // === PRESSURE TRANSDUCERS (Rows 2-4) ===
       'pt1': 'col-start-1 row-start-2 col-span-1 row-span-1',
       'pt2': 'col-start-2 row-start-2 col-span-1 row-span-1',
       'pt3': 'col-start-3 row-start-2 col-span-1 row-span-1',
@@ -42,16 +42,18 @@ export function SensorGrid({ config, registry }: SensorGridProps) {
       'pt7': 'col-start-3 row-start-3 col-span-1 row-span-1',
       'pt8': 'col-start-4 row-start-3 col-span-1 row-span-1',
 
-      // === LOAD CELLS (Rows 5-6) ===
-      'lc_net_force': 'col-start-1 row-start-5 col-span-1 row-span-2',      // 1×2
-      'lc1': 'col-start-2 row-start-5 col-span-1 row-span-2',        // 1×2 (Nox Tank Wt)
-      'lc2': 'col-start-3 row-start-5 col-span-1 row-span-2',        // 1×2 (Thrust 1)
-      'lc3': 'col-start-4 row-start-5 col-span-1 row-span-1',        // 1×1 (Thrust 2)
-      'lc4': 'col-start-4 row-start-6 col-span-1 row-span-1',        // 1×1 (Thrust 3)
+      'pt9': 'col-start-1 row-start-4 col-span-1 row-span-1',
 
-      // === THERMOCOUPLES (Rows 8) ===
-      'tc2': 'col-start-1 row-start-8 col-span-2 row-span-1',        // 2×1 left half (Chamber)
-      'tc1': 'col-start-3 row-start-8 col-span-2 row-span-1',        // 2×1 right half (Nox Feed)
+      // === LOAD CELLS (Rows 6-7) ===
+      'lc_net_force': 'col-start-1 row-start-6 col-span-1 row-span-2',      // 1×2
+      'lc1': 'col-start-2 row-start-6 col-span-1 row-span-2',        // 1×2 (Nox Tank Wt)
+      'lc2': 'col-start-3 row-start-6 col-span-1 row-span-2',        // 1×2 (Thrust 1)
+      'lc3': 'col-start-4 row-start-6 col-span-1 row-span-1',        // 1×1 (Thrust 2)
+      'lc4': 'col-start-4 row-start-7 col-span-1 row-span-1',        // 1×1 (Thrust 3)
+
+      // === THERMOCOUPLES (Rows 9) ===
+      'tc1': 'col-start-1 row-start-9 col-span-2 row-span-1',        // 2×1 left half (Injector)
+      'tc2': 'col-start-3 row-start-9 col-span-2 row-span-1',        // 2×1 right half (Fuel Inlet)
     };
 
     return positions[sensorId] || 'col-span-1 row-span-1';
@@ -60,7 +62,7 @@ export function SensorGrid({ config, registry }: SensorGridProps) {
   // Determine grid columns for filtered views
   const getGridColumns = () => {
     if (isBentoLayout) return 'grid-cols-4'; // NEW: 4 columns for bento
-    if (sensorCount === 8) return 'grid-cols-4'; // Pressure (4x2)
+    if (sensorCount === 9) return 'grid-cols-4'; // Pressure (4x3 with pt9)
     if (sensorCount === 5) return 'grid-cols-4'; // Load Cells (4 cols)
     if (sensorCount === 2) return 'grid-cols-2'; // Temperature (2 cols)
     return 'grid-cols-4'; // Default
@@ -75,7 +77,7 @@ export function SensorGrid({ config, registry }: SensorGridProps) {
   // Get fixed row heights for filtered views
   const getFilteredRowsStyle = () => {
     if (isBentoLayout) return undefined;
-    if (sensorCount === 8) return { gridTemplateRows: 'repeat(2, minmax(400px, 1fr))' }; // Pressure: 2 rows, min 400px, fill space
+    if (sensorCount === 9) return { gridTemplateRows: 'repeat(3, minmax(400px, 1fr))' }; // Pressure: 3 rows, min 400px, fill space
     if (sensorCount === 5) return { gridTemplateRows: 'repeat(2, minmax(400px, 1fr))' }; // Load Cells: 2 rows, min 400px, fill space
     if (sensorCount === 2) return { gridTemplateRows: 'minmax(400px, 1fr)' }; // Temperature: 1 row, min 400px, fill space
     return undefined;
@@ -111,22 +113,22 @@ export function SensorGrid({ config, registry }: SensorGridProps) {
           getGridRows()
         )}
         style={isBentoLayout ? {
-          gridTemplateRows: 'auto 300px 300px auto 200px 200px auto 250px auto'
+          gridTemplateRows: 'auto 300px 300px 300px auto 200px 200px auto 250px auto'
           // Row 1: header (auto ~30px)
-          // Rows 2-3: PT chart rows (300px each - fixed)
-          // Row 4: header (auto ~30px)
-          // Rows 5-6: Load cell chart rows (200px each - fixed, total 400px for 2-row spans, 200px for Thrust2/3)
-          // Row 7: header (auto ~30px)
-          // Row 8: Thermocouple chart row (250px - fixed)
-          // Row 9: buffer (auto)
+          // Rows 2-4: PT chart rows (300px each - fixed, now 3 rows for 9 PTs)
+          // Row 5: header (auto ~30px)
+          // Rows 6-7: Load cell chart rows (200px each - fixed, total 400px for 2-row spans, 200px for Thrust2/3)
+          // Row 8: header (auto ~30px)
+          // Row 9: Thermocouple chart row (250px - fixed)
+          // Row 10: buffer (auto)
         } : getFilteredRowsStyle()}
       >
         {/* Section Headers - only for All Sensors view */}
         {isBentoLayout && (
           <>
             <SectionHeader title="PRESSURE TRANSDUCERS" row={1} />
-            <SectionHeader title="LOAD CELLS" row={4} />
-            <SectionHeader title="THERMOCOUPLES" row={7} />
+            <SectionHeader title="LOAD CELLS" row={5} />
+            <SectionHeader title="THERMOCOUPLES" row={8} />
           </>
         )}
 

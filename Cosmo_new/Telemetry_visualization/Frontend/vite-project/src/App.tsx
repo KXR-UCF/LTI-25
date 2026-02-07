@@ -203,8 +203,8 @@ export default function App() {
               <SelectValue placeholder="Filter" />
             </SelectTrigger>
             <SelectContent className="bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-200">
-              <SelectItem value="all">All Sensors (15)</SelectItem>
-              <SelectItem value="pressure">Pressure (8)</SelectItem>
+              <SelectItem value="all">All Sensors (16)</SelectItem>
+              <SelectItem value="pressure">Pressure (9)</SelectItem>
               <SelectItem value="thrust">Load Cells (5)</SelectItem>
               <SelectItem value="temp">Temperature (2)</SelectItem>
             </SelectContent>

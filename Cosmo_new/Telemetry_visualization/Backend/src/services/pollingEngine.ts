@@ -192,6 +192,7 @@ export class PollingEngine {
           { id: 'pt6', value: telemetryRow.pt6 },
           { id: 'pt7', value: telemetryRow.pt7 },
           { id: 'pt8', value: telemetryRow.pt8 },
+          { id: 'pt9', value: telemetryRow.pt9 },
           { id: 'lc1', value: telemetryRow.lc1 },
           { id: 'lc2', value: telemetryRow.lc2 },
           { id: 'lc3', value: telemetryRow.lc3 },
