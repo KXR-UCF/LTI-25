@@ -14,6 +14,7 @@ export const ALL_SENSORS: SensorConfig[] = [
   { id: 'pt7', label: 'Injector', unit: 'psi', color: '#06b6d4', group: 'pressure', domain: [0, 100], showStats: true },
   { id: 'pt8', label: 'Fuel Inlet', unit: 'psi', color: '#06b6d4', group: 'pressure', domain: [0, 100], showStats: true },
   { id: 'pt9', label: 'HPA', unit: 'psi', color: '#06b6d4', group: 'pressure', domain: [0, 100], showStats: true },
+  { id: 'pt25', label: 'COPV', unit: 'psi', color: '#06b6d4', group: 'pressure', domain: [0, 100], showStats: true },
 
   // LOAD CELLS / THRUST (5 total) - IDs match wanda2 table columns
   { id: 'lc_net_force', label: 'NET FORCE', unit: 'lbs', color: '#ef4444', group: 'thrust', domain: [0, 100], showStats: true },
@@ -23,8 +24,8 @@ export const ALL_SENSORS: SensorConfig[] = [
   { id: 'lc1', label: 'Nox Tank Wt', unit: 'lbs', color: '#f97316', group: 'thrust', domain: [0, 100], showStats: true },
 
   // TEMPERATURE SENSORS (2 total) - IDs match wanda2 table columns
-  { id: 'tc1', label: 'Injector', unit: '°C', color: '#a855f7', group: 'temp', domain: [0, 100], showStats: true },
-  { id: 'tc2', label: 'Fuel Inlet', unit: '°C', color: '#a855f7', group: 'temp', domain: [0, 100], showStats: true },
+  { id: 'tc1', label: 'Injector', unit: 'K', color: '#a855f7', group: 'temp', domain: [0, 400], showStats: true },
+  { id: 'tc2', label: 'Fuel Inlet', unit: 'K', color: '#a855f7', group: 'temp', domain: [0, 400], showStats: true },
 ];
 
 // All available switches - matches backend SwitchState interface
@@ -43,15 +44,19 @@ const ALL_SWITCHES: SwitchConfig[] = [
   // Nitrogen System
   { id: 'switch6', label: 'N2 FILL', group: 'n2', type: 'valve' },
   { id: 'switch7', label: 'N2 VENT', group: 'n2', type: 'valve' },
-  { id: 'switch8', label: 'N2 RELIEF', group: 'n2', type: 'valve' },
+
+  // Relief Valves
+  { id: 'switch8', label: 'FUEL/N2 RELIEF', group: 'control', type: 'valve' },
 
   // Servo Control
   { id: 'switch9', label: 'SERVO PWR', group: 'servo', type: 'valve' },
   { id: 'switch10', label: 'SERVO MOVE', group: 'servo', type: 'valve' },
 
+  // Main Valves
+  { id: 'switch5', label: 'FUEL/NOX MAIN', group: 'control', type: 'valve' },
+  { id: 'switch4', label: 'DOME VENT', group: 'control', type: 'valve' },
+
   // Unused (hidden in UI)
-  { id: 'switch4', label: 'UNUSED 4', group: 'unused', type: 'valve' },
-  { id: 'switch5', label: 'UNUSED 5', group: 'unused', type: 'valve' },
 ];
 
 // Default dashboard config with all sensors

@@ -411,7 +411,7 @@ export default function App() {
       </header>
 
       {/* --- MAIN CONTENT (Charts) --- */}
-      <main className={`flex-1 relative bg-slate-50 dark:bg-slate-950/50 ${isAllSensorsView ? 'overflow-auto' : 'overflow-hidden'}`}>
+      <main className="flex-1 relative bg-slate-50 dark:bg-slate-950/50 overflow-auto">
         <SensorGrid
           config={currentConfig}
           registry={registerChart}

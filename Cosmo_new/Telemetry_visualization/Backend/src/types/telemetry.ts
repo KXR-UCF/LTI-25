@@ -14,6 +14,7 @@ export interface RawTelemetryRow {
     pt7: number;
     pt8: number;
     pt9: number;
+    pt25: number;
     continuity_raw: number;
     // From wanda2 table
     lc1: number;

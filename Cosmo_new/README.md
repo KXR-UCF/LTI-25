@@ -39,6 +39,7 @@ CREATE TABLE wanda1 (
     pt7 DOUBLE,
     pt8 DOUBLE,
     pt9 DOUBLE,
+    pt25 DOUBLE,
     continuity_raw DOUBLE
 ) TIMESTAMP(timestamp) PARTITION BY DAY;
 

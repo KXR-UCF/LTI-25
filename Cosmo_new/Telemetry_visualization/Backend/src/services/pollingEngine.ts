@@ -132,8 +132,9 @@ export class PollingEngine {
     const queryTime = performance.now() - queryStart;
 
     // DEBUG: Log query performance every 60 polls (~1 second)
-    if (Math.random() < 0.0167) { // ~1/60 chance
+    if (this.pollCount % 60 === 0) {
       console.log(`[Query Perf] Took ${queryTime.toFixed(2)}ms | Timestamp: ${telemetryRow?.timestamp || 'null'}`);
+      console.log(`[Dedup Stats] Broadcasts: ${this.totalBroadcasts} | Skipped: ${this.totalDuplicatesSkipped}`);
     }
 
     // 3. Get current switch state (always, even if no telemetry)
@@ -193,6 +194,7 @@ export class PollingEngine {
           { id: 'pt7', value: telemetryRow.pt7 },
           { id: 'pt8', value: telemetryRow.pt8 },
           { id: 'pt9', value: telemetryRow.pt9 },
+          { id: 'pt25', value: telemetryRow.pt25 },
           { id: 'lc1', value: telemetryRow.lc1 },
           { id: 'lc2', value: telemetryRow.lc2 },
           { id: 'lc3', value: telemetryRow.lc3 },

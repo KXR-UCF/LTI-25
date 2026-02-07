@@ -53,6 +53,31 @@ export function useTelemetry() {
   const countdownPausedTimeRef = useRef<number>(0); // Accumulated paused time in ms
   const countdownHeldAtRef = useRef<number | null>(null); // When HOLD was clicked
 
+  // Batching: accumulate data points, flush on animation frame
+  const pendingDataRef = useRef<Array<{ id: string; time: number; value: number }>>([]);
+  const animationFrameRef = useRef<number | null>(null);
+
+  // Flush pending data to charts (called once per animation frame)
+  const flushPendingData = useCallback(() => {
+    const batch = pendingDataRef.current;
+    if (batch.length === 0) {
+      animationFrameRef.current = null;
+      return;
+    }
+
+    // Update all charts with batched data
+    batch.forEach(({ id, time, value }) => {
+      const chart = chartRegistry.current.get(id);
+      if (chart) {
+        chart.addDataPoint(time, value);
+      }
+    });
+
+    // Clear buffer
+    pendingDataRef.current = [];
+    animationFrameRef.current = null;
+  }, []);
+
   // --- WEBSOCKET ENGINE ---
   const { readyState } = useWebSocket(WS_URL, {
     shouldReconnect: () => true, // Auto-reconnect
@@ -90,29 +115,35 @@ export function useTelemetry() {
           recordedDataRef.current.push(dataPoint);
         }
 
-        // 7. UPDATE CHARTS - Only if NOT stopped (frozen)
+        // 7. BATCH DATA FOR CHARTS - Only if NOT stopped (frozen)
         if (recordingStateRef.current !== 'stopped') {
           packet.telemetry.forEach((point) => {
-            const chart = chartRegistry.current.get(point.id);
-            if (chart) {
-              let valueToPlot = point.value;
+            let valueToPlot = point.value;
 
-              // Apply filter only if enabled
-              if (filterEnabledRef.current) {
-                // Get or create filter
-                let filter = filtersRef.current.get(point.id);
-                if (!filter) {
-                  filter = new MedianFilter(5); // Window size 5
-                  filtersRef.current.set(point.id, filter);
-                }
-                // Smooth the value
-                valueToPlot = filter.process(point.value);
+            // Apply filter only if enabled
+            if (filterEnabledRef.current) {
+              // Get or create filter
+              let filter = filtersRef.current.get(point.id);
+              if (!filter) {
+                filter = new MedianFilter(5); // Window size 5
+                filtersRef.current.set(point.id, filter);
               }
-
-              // Send to Chart
-              chart.addDataPoint(runtime, valueToPlot);
+              // Smooth the value
+              valueToPlot = filter.process(point.value);
             }
+
+            // Add to pending batch (don't update chart yet)
+            pendingDataRef.current.push({
+              id: point.id,
+              time: runtime,
+              value: valueToPlot
+            });
           });
+
+          // Schedule flush if not already scheduled
+          if (animationFrameRef.current === null) {
+            animationFrameRef.current = requestAnimationFrame(flushPendingData);
+          }
         }
       } catch (err) {
         console.error('Telemetry Parse Error:', err);
@@ -326,6 +357,15 @@ export function useTelemetry() {
     }
 
     console.log('[Filter]', enabled ? '✅ ENABLED - Median filtering active' : '❌ DISABLED - Raw values');
+  }, []);
+
+  // Cleanup animation frame on unmount
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
   }, []);
 
  const switches: SwitchState = latestPacket ? latestPacket.switches : DEFAULT_SWITCHES;
