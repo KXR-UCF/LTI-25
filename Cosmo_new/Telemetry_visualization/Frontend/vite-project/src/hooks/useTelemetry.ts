@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { TelemetryPacket, SwitchState } from '../types/telemetry';
 import { ChartHandle } from '../components/TelemetryChart';
-import { MedianFilter } from '../lib/filters';
+import { EMAFilter } from '../lib/filters';
 
 const DEFAULT_SWITCHES: SwitchState = {
     switch1: false, switch2: false, switch3: false, switch4: false,
@@ -29,7 +29,7 @@ export function useTelemetry() {
   // Stores the latest packet purely for the Switch UI (low frequency updates)
   const [latestPacket, setLatestPacket] = useState<TelemetryPacket | null>(null);
   const [runtimeStr, setRuntimeStr] = useState<string>('00:00:00.00');
-  const [filterEnabled, setFilterEnabled] = useState<boolean>(true);
+  const [filterEnabled, setFilterEnabled] = useState<boolean>(false);
   // Data health state: null = healthy, number = ms since last packet
   const [dataLag, setDataLag] = useState<number | null>(null);
   // Countdown state: holds when countdown is paused
@@ -42,8 +42,8 @@ export function useTelemetry() {
   // Only stores data when RECORDING (not during idle monitoring)
   const recordedDataRef = useRef<StoredDataPoint[]>([]);
   const recordingStateRef = useRef<RecordingState>('idle');
-  const filtersRef = useRef<Map<string, MedianFilter>>(new Map());
-  const filterEnabledRef = useRef<boolean>(true);
+  const filtersRef = useRef<Map<string, EMAFilter>>(new Map());
+  const filterEnabledRef = useRef<boolean>(false);
   // Smooth clock: track last packet time for lag detection
   const lastPacketTimeRef = useRef<number | null>(null);
   const clientStartTimeRef = useRef<number | null>(null);
@@ -125,7 +125,7 @@ export function useTelemetry() {
               // Get or create filter
               let filter = filtersRef.current.get(point.id);
               if (!filter) {
-                filter = new MedianFilter(5); // Window size 5
+                filter = new EMAFilter(0.3);
                 filtersRef.current.set(point.id, filter);
               }
               // Smooth the value
@@ -356,7 +356,7 @@ export function useTelemetry() {
       filtersRef.current.forEach(f => f.reset());
     }
 
-    console.log('[Filter]', enabled ? '✅ ENABLED - Median filtering active' : '❌ DISABLED - Raw values');
+    console.log('[Filter]', enabled ? '✅ ENABLED - EMA filtering active' : '❌ DISABLED - Raw values');
   }, []);
 
   // Cleanup animation frame on unmount
