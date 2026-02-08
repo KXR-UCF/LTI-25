@@ -157,8 +157,11 @@ export const TelemetryChart = forwardRef<ChartHandle, TelemetryChartProps>(
 
               const splits = [];
               const start = Math.floor(min / interval) * interval;
-              for (let i = start; i <= max + interval/2; i += interval) {
-                splits.push(Number(i.toFixed(10))); // Fix floating point precision
+              // Only include splits within the actual min/max range
+              for (let i = start; i <= max; i += interval) {
+                if (i >= min && i <= max) {
+                  splits.push(Number(i.toFixed(10))); // Fix floating point precision
+                }
               }
               return splits;
             },
@@ -166,7 +169,10 @@ export const TelemetryChart = forwardRef<ChartHandle, TelemetryChartProps>(
               // Smart formatting based on value magnitude
               if (Math.abs(v) >= 100) return Math.round(v).toLocaleString();
               if (Math.abs(v) >= 1) return v.toFixed(1);
+              if (Math.abs(v) >= 0.1) return v.toFixed(2);
               if (Math.abs(v) >= 0.01) return v.toFixed(3);
+              // For very small values or zero, show as integer
+              if (v === 0) return '0';
               return v.toFixed(4);
             }),
             font: '10px monospace',
