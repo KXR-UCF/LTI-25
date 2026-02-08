@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { execSync } from 'child_process';
 import { fetchLatestTelemetry } from './telemetryProvider';
 import { SwitchStateManager } from './switchState';
 import { TelemetryPacket } from '../types/telemetry';
@@ -33,16 +34,18 @@ export class PollingEngine {
   }
 
   /**
-   * Attempts to open the named pipe in NON-BLOCKING mode
-   * If it fails (Python script not running), it just logs and continues.
+   * Creates the named pipe if needed and opens it for reading.
+   * Pipe is created here so it's ready before socket_client.py starts.
    */
   private tryOpenPipe() {
     try {
-      if (fs.existsSync(PIPE_PATH)) {
-        // O_RDONLY | O_NONBLOCK is critical for NFR-P2
-        this.pipeFd = fs.openSync(PIPE_PATH, fs.constants.O_RDONLY | fs.constants.O_NONBLOCK);
-        console.log('Connected to Switch Pipe');
+      if (!fs.existsSync(PIPE_PATH)) {
+        execSync(`mkfifo ${PIPE_PATH}`);
+        console.log('Created Switch Pipe:', PIPE_PATH);
       }
+      // O_RDONLY | O_NONBLOCK is critical for NFR-P2
+      this.pipeFd = fs.openSync(PIPE_PATH, fs.constants.O_RDONLY | fs.constants.O_NONBLOCK);
+      console.log('Connected to Switch Pipe');
     } catch (err) {
       console.warn('Failed to open pipe (will retry):', err);
     }
@@ -132,8 +135,9 @@ export class PollingEngine {
     const queryTime = performance.now() - queryStart;
 
     // DEBUG: Log query performance every 60 polls (~1 second)
-    if (Math.random() < 0.0167) { // ~1/60 chance
+    if (this.pollCount % 60 === 0) {
       console.log(`[Query Perf] Took ${queryTime.toFixed(2)}ms | Timestamp: ${telemetryRow?.timestamp || 'null'}`);
+      console.log(`[Dedup Stats] Broadcasts: ${this.totalBroadcasts} | Skipped: ${this.totalDuplicatesSkipped}`);
     }
 
     // 3. Get current switch state (always, even if no telemetry)
@@ -192,6 +196,8 @@ export class PollingEngine {
           { id: 'pt6', value: telemetryRow.pt6 },
           { id: 'pt7', value: telemetryRow.pt7 },
           { id: 'pt8', value: telemetryRow.pt8 },
+          { id: 'pt9', value: telemetryRow.pt9 },
+          { id: 'pt25', value: telemetryRow.pt25 },
           { id: 'lc1', value: telemetryRow.lc1 },
           { id: 'lc2', value: telemetryRow.lc2 },
           { id: 'lc3', value: telemetryRow.lc3 },

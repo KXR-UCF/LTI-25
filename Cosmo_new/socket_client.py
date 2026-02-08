@@ -32,13 +32,13 @@ current_switch_states = {
     'switch1': False,   # NOX FILL
     'switch2': False,   # NOX VENT
     'switch3': False,   # NOX RELIEF
-    'switch4': False,   # UNMAPPED
-    'switch5': False,   # UNMAPPED
+    'switch4': False,   # DOME VENT
+    'switch5': False,   # FUEL/NOX MAIN
     'switch6': False,   # N2 FILL
     'switch7': False,   # N2 VENT
-    'switch8': False,   # N2 RELIEF
-    'switch9': False,   # UNMAPPED
-    'switch10': False,  # UNMAPPED
+    'switch8': False,   # FUEL/N2 RELIEF
+    'switch9': False,   # SERVO PWR
+    'switch10': False,  # SERVO MOVE
     'continuity': False, # CONTINUITY (not mapped to hardware switch)
     'launchKey': False,
     'abort': False
@@ -68,13 +68,13 @@ def parse_and_track_state(msg_str):
                 '1': 'switch1',   # NOX FILL
                 '2': 'switch2',   # NOX VENT
                 '3': 'switch3',   # NOX RELIEF
-                '4': 'switch4',   # UNMAPPED
-                '5': 'switch5',   # UNMAPPED
+                '4': 'switch4',   # DOME VENT
+                '5': 'switch5',   # FUEL/NOX MAIN
                 '6': 'switch6',   # N2 FILL
                 '7': 'switch7',   # N2 VENT
-                '8': 'switch8',   # N2 RELIEF
-                '9': 'switch9',   # UNMAPPED
-                '10': 'switch10', # UNMAPPED
+                '8': 'switch8',   # FUEL/N2 RELIEF
+                '9': 'switch9',   # SERVO PWR
+                '10': 'switch10', # SERVO MOVE
             }
             if switch_num in switch_map:
                 current_switch_states[switch_map[switch_num]] = state
