@@ -5,8 +5,8 @@ import { SwitchStateManager } from './switchState';
 import { TelemetryPacket } from '../types/telemetry';
 
 const PIPE_PATH = '/tmp/switch_pipe';
-// Continuity voltage threshold - if voltage exceeds this, circuit is complete
-const CONTINUITY_THRESHOLD = 2.5; // Volts (adjust based on your ignition circuit)
+// Continuity voltage threshold - if voltage drops below this, circuit is complete
+const CONTINUITY_THRESHOLD = 2.0; // Volts
 
 export class PollingEngine {
   private isRunning: boolean = false;
@@ -145,7 +145,7 @@ export class PollingEngine {
 
     // Override continuity based on telemetry voltage threshold (if available)
     if (telemetryRow) {
-      currentSwitches.continuity = telemetryRow.continuity_raw > CONTINUITY_THRESHOLD;
+      currentSwitches.continuity = telemetryRow.continuity_raw < CONTINUITY_THRESHOLD;
     }
 
     // SAFETY: If abort is engaged, turn off all valves and launch key
