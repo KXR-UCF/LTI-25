@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Automates start of cosmo
-# To run in command line: 'bash launch.sh'
+# To run in command line: 'bash startCosmo.sh'
 # To switch between tmux panes: 'crtl'+'b' followed by arrow key corresponding to pane direction
 # Close an individual pane: type 'exit' in the pane's terminal
 # Close tmux and trigger system shutdown: 'crtl'+'b' followed by 'd'
