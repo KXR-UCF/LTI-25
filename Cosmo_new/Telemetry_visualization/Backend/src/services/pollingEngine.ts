@@ -6,7 +6,7 @@ import { TelemetryPacket } from '../types/telemetry';
 
 const PIPE_PATH = '/tmp/switch_pipe';
 // Continuity voltage threshold - if voltage drops below this, circuit is complete
-const CONTINUITY_THRESHOLD = 2.0; // Volts
+const CONTINUITY_THRESHOLD = 1.0; // Volts
 
 export class PollingEngine {
   private isRunning: boolean = false;
