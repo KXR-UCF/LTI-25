@@ -41,7 +41,7 @@ CREATE TABLE wanda1 (
     pt9 DOUBLE,
     pt25 DOUBLE,
     continuity_raw DOUBLE
-) TIMESTAMP(timestamp) PARTITION BY DAY;
+) TIMESTAMP(timestamp) PARTITION BY DAY WITH maxUncommittedRows=1, o3MaxLag=1ms;
 
 CREATE TABLE wanda2 (
     timestamp TIMESTAMP,
@@ -52,7 +52,7 @@ CREATE TABLE wanda2 (
     lc_net_force DOUBLE,
     tc1 DOUBLE,
     tc2 DOUBLE
-) TIMESTAMP(timestamp) PARTITION BY DAY;
+) TIMESTAMP(timestamp) PARTITION BY DAY WITH maxUncommittedRows=1, o3MaxLag=1ms;
 ```
 
 ### 4. Install Dependencies
