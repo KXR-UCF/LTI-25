@@ -45,16 +45,14 @@ const ALL_SWITCHES: SwitchConfig[] = [
   { id: 'switch6', label: 'N2 FILL', group: 'n2', type: 'valve' },
   { id: 'switch7', label: 'N2 VENT', group: 'n2', type: 'valve' },
 
-  // Relief Valves
-  { id: 'switch8', label: 'FUEL/N2 RELIEF', group: 'control', type: 'valve' },
-
-  // Servo Control
-  { id: 'switch9', label: 'SERVO PWR', group: 'servo', type: 'valve' },
-  { id: 'switch10', label: 'SERVO MOVE', group: 'servo', type: 'valve' },
+  // Fuel System
+  { id: 'switch8', label: 'FUEL RELIEF', group: 'fuel', type: 'valve' },
+  { id: 'switch9', label: 'FUEL PRESS', group: 'fuel', type: 'valve' },
+  { id: 'switch10', label: 'FUEL MAIN', group: 'fuel', type: 'valve' },
 
   // Main Valves
-  { id: 'switch5', label: 'FUEL/NOX MAIN', group: 'control', type: 'valve' },
-  { id: 'switch4', label: 'DOME VENT', group: 'control', type: 'valve' },
+  { id: 'switch5', label: 'NOX MAIN', group: 'nox', type: 'valve' },
+  { id: 'switch4', label: 'DOME VENT', group: 'dome', type: 'valve' },
 
   // Unused (hidden in UI)
 ];
