@@ -25,10 +25,25 @@ export const TelemetryChart = forwardRef<ChartHandle, TelemetryChartProps>(
     const { theme } = useTheme();
     const isDark = theme === 'dark';
 
-    // Data Buffers (Mutable for performance)
+    // Ring Buffer Configuration (power of 2 for efficient masking)
+    const CAPACITY = 8192; // Must be power of 2
+    const MASK = CAPACITY - 1; // 8191 - for fast modulo via bitwise AND
+    const MAX_VISIBLE = 5000; // Keep last 5000 points visible
+
+    // Ring Buffer Storage (fixed-size arrays, reused for entire lifecycle)
+    const timesRingRef = useRef<number[]>(new Array(CAPACITY).fill(0));
+    const valuesRingRef = useRef<number[]>(new Array(CAPACITY).fill(0));
+    const readIndexRef = useRef<number>(0);   // Unmasked - grows forever
+    const writeIndexRef = useRef<number>(0);  // Unmasked - grows forever
+
+    // View arrays for uPlot (extracted from ring buffer)
     const dataRef = useRef<[number[], number[]]>([[], []]);
     const peakRef = useRef<number>(-Infinity);
     const recordingStateRef = useRef<'idle' | 'armed' | 'recording' | 'stopped'>('idle');
+
+    // Performance tracking
+    const perfCounterRef = useRef<number>(0);
+    const perfTotalTimeRef = useRef<number>(0);
 
     // Refs for stats bar elements (performance optimization - avoid innerHTML)
     const statsLabelRef = useRef<HTMLSpanElement>(null);
@@ -54,7 +69,7 @@ export const TelemetryChart = forwardRef<ChartHandle, TelemetryChartProps>(
           {
             // Y-Axis (Value)
             show: true,
-            spanGaps: false,
+            spanGaps: true,  // Interpolate over gaps to prevent jagged lines
             stroke: config.color,
             width: 2,
             points: { show: false },
@@ -142,8 +157,11 @@ export const TelemetryChart = forwardRef<ChartHandle, TelemetryChartProps>(
 
               const splits = [];
               const start = Math.floor(min / interval) * interval;
-              for (let i = start; i <= max + interval/2; i += interval) {
-                splits.push(Number(i.toFixed(10))); // Fix floating point precision
+              // Only include splits within the actual min/max range
+              for (let i = start; i <= max; i += interval) {
+                if (i >= min && i <= max) {
+                  splits.push(Number(i.toFixed(10))); // Fix floating point precision
+                }
               }
               return splits;
             },
@@ -151,7 +169,10 @@ export const TelemetryChart = forwardRef<ChartHandle, TelemetryChartProps>(
               // Smart formatting based on value magnitude
               if (Math.abs(v) >= 100) return Math.round(v).toLocaleString();
               if (Math.abs(v) >= 1) return v.toFixed(1);
+              if (Math.abs(v) >= 0.1) return v.toFixed(2);
               if (Math.abs(v) >= 0.01) return v.toFixed(3);
+              // For very small values or zero, show as integer
+              if (v === 0) return '0';
               return v.toFixed(4);
             }),
             font: '10px monospace',
@@ -359,18 +380,53 @@ export const TelemetryChart = forwardRef<ChartHandle, TelemetryChartProps>(
           return;
         }
 
-        const [times, values] = dataRef.current;
+        const perfStart = performance.now();
 
-        times.push(time);
-        values.push(value);
+        // --- RING BUFFER OPERATIONS (O(1)) ---
 
-        // Sliding Window (Keep last 5000 points)
-        if (times.length > 5000) {
-          times.shift();
-          values.shift();
+        // Write to ring buffer at masked position
+        timesRingRef.current[writeIndexRef.current & MASK] = time;
+        valuesRingRef.current[writeIndexRef.current & MASK] = value;
+        writeIndexRef.current++; // Unmasked - grows forever
+
+        // If buffer exceeds max visible, advance read pointer
+        if (writeIndexRef.current - readIndexRef.current > MAX_VISIBLE) {
+          readIndexRef.current++;
+        }
+
+        // --- EXTRACT VIEW FOR UPLOT (O(n) but no shift overhead) ---
+
+        const size = writeIndexRef.current - readIndexRef.current;
+        const times = dataRef.current[0];
+        const values = dataRef.current[1];
+
+        // Resize view arrays if needed (reuse existing arrays when possible)
+        if (times.length !== size) {
+          times.length = size;
+          values.length = size;
+        }
+
+        // Copy valid data from ring buffer to view arrays
+        for (let i = 0; i < size; i++) {
+          const ringIdx = (readIndexRef.current + i) & MASK;
+          times[i] = timesRingRef.current[ringIdx];
+          values[i] = valuesRingRef.current[ringIdx];
         }
 
         uplotRef.current.setData(dataRef.current);
+
+        // Performance tracking
+        const perfEnd = performance.now();
+        const elapsed = perfEnd - perfStart;
+        perfTotalTimeRef.current += elapsed;
+        perfCounterRef.current++;
+
+        // Log performance every 60 calls (~1 second at 60Hz)
+        if (perfCounterRef.current % 60 === 0) {
+          const avgTime = perfTotalTimeRef.current / 60;
+          console.log(`[${config.id}] RING BUFFER PERF: avg=${avgTime.toFixed(3)}ms per addDataPoint (${size} points)`);
+          perfTotalTimeRef.current = 0;
+        }
 
         // Update Stats Bottom Bar
         if (config.showStats && statsValueRef.current) {
@@ -383,8 +439,16 @@ export const TelemetryChart = forwardRef<ChartHandle, TelemetryChartProps>(
       },
 
       reset: () => {
+        // Reset ring buffer indices (O(1) - no array clearing needed)
+        readIndexRef.current = 0;
+        writeIndexRef.current = 0;
+
+        // Clear view arrays
         dataRef.current = [[], []];
         peakRef.current = -Infinity;
+        perfCounterRef.current = 0;
+        perfTotalTimeRef.current = 0;
+
         uplotRef.current?.setData(dataRef.current);
         if (statsValueRef.current) {
           // Fast textContent updates (no HTML parsing)

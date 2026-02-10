@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { TelemetryPacket, SwitchState } from '../types/telemetry';
 import { ChartHandle } from '../components/TelemetryChart';
-import { MedianFilter } from '../lib/filters';
+import { EMAFilter } from '../lib/filters';
 
 const DEFAULT_SWITCHES: SwitchState = {
     switch1: false, switch2: false, switch3: false, switch4: false,
@@ -29,7 +29,7 @@ export function useTelemetry() {
   // Stores the latest packet purely for the Switch UI (low frequency updates)
   const [latestPacket, setLatestPacket] = useState<TelemetryPacket | null>(null);
   const [runtimeStr, setRuntimeStr] = useState<string>('00:00:00.00');
-  const [filterEnabled, setFilterEnabled] = useState<boolean>(true);
+  const [filterEnabled, setFilterEnabled] = useState<boolean>(false);
   // Data health state: null = healthy, number = ms since last packet
   const [dataLag, setDataLag] = useState<number | null>(null);
   // Countdown state: holds when countdown is paused
@@ -42,8 +42,8 @@ export function useTelemetry() {
   // Only stores data when RECORDING (not during idle monitoring)
   const recordedDataRef = useRef<StoredDataPoint[]>([]);
   const recordingStateRef = useRef<RecordingState>('idle');
-  const filtersRef = useRef<Map<string, MedianFilter>>(new Map());
-  const filterEnabledRef = useRef<boolean>(true);
+  const filtersRef = useRef<Map<string, EMAFilter>>(new Map());
+  const filterEnabledRef = useRef<boolean>(false);
   // Smooth clock: track last packet time for lag detection
   const lastPacketTimeRef = useRef<number | null>(null);
   const clientStartTimeRef = useRef<number | null>(null);
@@ -52,6 +52,31 @@ export function useTelemetry() {
   const countdownStartTimeRef = useRef<number | null>(null); // When countdown started
   const countdownPausedTimeRef = useRef<number>(0); // Accumulated paused time in ms
   const countdownHeldAtRef = useRef<number | null>(null); // When HOLD was clicked
+
+  // Batching: accumulate data points, flush on animation frame
+  const pendingDataRef = useRef<Array<{ id: string; time: number; value: number }>>([]);
+  const animationFrameRef = useRef<number | null>(null);
+
+  // Flush pending data to charts (called once per animation frame)
+  const flushPendingData = useCallback(() => {
+    const batch = pendingDataRef.current;
+    if (batch.length === 0) {
+      animationFrameRef.current = null;
+      return;
+    }
+
+    // Update all charts with batched data
+    batch.forEach(({ id, time, value }) => {
+      const chart = chartRegistry.current.get(id);
+      if (chart) {
+        chart.addDataPoint(time, value);
+      }
+    });
+
+    // Clear buffer
+    pendingDataRef.current = [];
+    animationFrameRef.current = null;
+  }, []);
 
   // --- WEBSOCKET ENGINE ---
   const { readyState } = useWebSocket(WS_URL, {
@@ -90,29 +115,35 @@ export function useTelemetry() {
           recordedDataRef.current.push(dataPoint);
         }
 
-        // 7. UPDATE CHARTS - Only if NOT stopped (frozen)
+        // 7. BATCH DATA FOR CHARTS - Only if NOT stopped (frozen)
         if (recordingStateRef.current !== 'stopped') {
           packet.telemetry.forEach((point) => {
-            const chart = chartRegistry.current.get(point.id);
-            if (chart) {
-              let valueToPlot = point.value;
+            let valueToPlot = point.value;
 
-              // Apply filter only if enabled
-              if (filterEnabledRef.current) {
-                // Get or create filter
-                let filter = filtersRef.current.get(point.id);
-                if (!filter) {
-                  filter = new MedianFilter(5); // Window size 5
-                  filtersRef.current.set(point.id, filter);
-                }
-                // Smooth the value
-                valueToPlot = filter.process(point.value);
+            // Apply filter only if enabled
+            if (filterEnabledRef.current) {
+              // Get or create filter
+              let filter = filtersRef.current.get(point.id);
+              if (!filter) {
+                filter = new EMAFilter(0.3);
+                filtersRef.current.set(point.id, filter);
               }
-
-              // Send to Chart
-              chart.addDataPoint(runtime, valueToPlot);
+              // Smooth the value
+              valueToPlot = filter.process(point.value);
             }
+
+            // Add to pending batch (don't update chart yet)
+            pendingDataRef.current.push({
+              id: point.id,
+              time: runtime,
+              value: valueToPlot
+            });
           });
+
+          // Schedule flush if not already scheduled
+          if (animationFrameRef.current === null) {
+            animationFrameRef.current = requestAnimationFrame(flushPendingData);
+          }
         }
       } catch (err) {
         console.error('Telemetry Parse Error:', err);
@@ -325,7 +356,16 @@ export function useTelemetry() {
       filtersRef.current.forEach(f => f.reset());
     }
 
-    console.log('[Filter]', enabled ? '✅ ENABLED - Median filtering active' : '❌ DISABLED - Raw values');
+    console.log('[Filter]', enabled ? '✅ ENABLED - EMA filtering active' : '❌ DISABLED - Raw values');
+  }, []);
+
+  // Cleanup animation frame on unmount
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
   }, []);
 
  const switches: SwitchState = latestPacket ? latestPacket.switches : DEFAULT_SWITCHES;

@@ -4,32 +4,33 @@ import { RawTelemetryRow } from '../types/telemetry';
 
 /**
  * Fetches the single most recent telemetry record from QuestDB.
- * Uses ASOF JOIN to combine data from wanda1 and wanda2 tables.
+ * Two parallel O(1) queries instead of one O(n) ASOF JOIN.
  */
 export async function fetchLatestTelemetry(): Promise<RawTelemetryRow | null> {
   try {
-    // ASOF JOIN matches rows with closest timestamps from both tables
-    const result = await sql<RawTelemetryRow[]>`
-      SELECT
-        w1.timestamp,
-        w1.pt1, w1.pt2, w1.pt3, w1.pt4,
-        w1.pt5, w1.pt6, w1.pt7, w1.pt8,
-        w1.continuity_raw,
-        w2.lc1, w2.lc2, w2.lc3, w2.lc4,
-        w2.lc_net_force,
-        w2.tc1, w2.tc2
-      FROM wanda1 w1
-      ASOF JOIN wanda2 w2
-      ORDER BY w1.timestamp DESC
-      LIMIT 1
-    `;
+    const [w1Result, w2Result] = await Promise.all([
+      sql`SELECT * FROM wanda1 ORDER BY timestamp DESC LIMIT 1`,
+      sql`SELECT * FROM wanda2 ORDER BY timestamp DESC LIMIT 1`,
+    ]);
 
-    // If no data exists yet (fresh DB), return null
-    if (!result || result.length === 0) {
+    if (!w1Result || w1Result.length === 0) {
       return null;
     }
 
-    return result[0];
+    const w1 = w1Result[0];
+    const w2 = w2Result?.[0];
+
+    return {
+      timestamp: w1.timestamp,
+      pt1: w1.pt1, pt2: w1.pt2, pt3: w1.pt3, pt4: w1.pt4,
+      pt5: w1.pt5, pt6: w1.pt6, pt7: w1.pt7, pt8: w1.pt8,
+      pt9: w1.pt9, pt25: w1.pt25,
+      continuity_raw: w1.continuity_raw,
+      lc1: w2?.lc1 ?? 0, lc2: w2?.lc2 ?? 0,
+      lc3: w2?.lc3 ?? 0, lc4: w2?.lc4 ?? 0,
+      lc_net_force: w2?.lc_net_force ?? 0,
+      tc1: w2?.tc1 ?? 0, tc2: w2?.tc2 ?? 0,
+    } as RawTelemetryRow;
   } catch (error) {
     console.error('QuestDB Query Error:', error);
     return null;

@@ -1,20 +1,21 @@
-export class MedianFilter {
-  private window: number[] = [];
-  private readonly size: number;
+export class EMAFilter {
+  private last: number | null = null;
+  private readonly alpha: number;
 
-  constructor(size: number = 5) {
-    this.size = size;
+  constructor(alpha: number = 0.3) {
+    this.alpha = alpha;
   }
 
   process(value: number): number {
-    this.window.push(value);
-    if (this.window.length > this.size) this.window.shift();
-    if (this.window.length === 0) return value;
-    const sorted = [...this.window].sort((a, b) => a - b);
-    return sorted[Math.floor(sorted.length / 2)];
+    if (this.last === null) {
+      this.last = value;
+      return value;
+    }
+    this.last = this.alpha * value + (1 - this.alpha) * this.last;
+    return this.last;
   }
 
   reset() {
-    this.window = [];
+    this.last = null;
   }
 }

@@ -30,14 +30,16 @@ Open QuestDB web console (http://localhost:9000) and run:
 ```sql
 CREATE TABLE wanda1 (
     timestamp TIMESTAMP,
-    pt01 DOUBLE,
-    pt02 DOUBLE,
-    pt03 DOUBLE,
-    pt04 DOUBLE,
-    pt05 DOUBLE,
-    pt06 DOUBLE,
-    pt07 DOUBLE,
-    pt08 DOUBLE,
+    pt1 DOUBLE,
+    pt2 DOUBLE,
+    pt3 DOUBLE,
+    pt4 DOUBLE,
+    pt5 DOUBLE,
+    pt6 DOUBLE,
+    pt7 DOUBLE,
+    pt8 DOUBLE,
+    pt9 DOUBLE,
+    pt25 DOUBLE,
     continuity_raw DOUBLE
 ) TIMESTAMP(timestamp) PARTITION BY DAY;
 

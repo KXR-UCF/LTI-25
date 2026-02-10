@@ -97,6 +97,7 @@ def setup_tables():
                     pt6 DOUBLE,
                     pt7 DOUBLE,
                     pt8 DOUBLE,
+                    pt9 DOUBLE,
                     continuity_raw DOUBLE
                 ) TIMESTAMP(timestamp) PARTITION BY DAY
             """)
@@ -228,6 +229,9 @@ def generate_sample_data(elapsed_time, duration_seconds):
     # TC-2: Chamber temperature
     tc2 = add_noise(MAX_CHAMBER_TEMP * intensity * temp_lag_factor, TEMP_NOISE)
 
+    # PT-9: HPA pressure (mapped to W1ADC1CH2)
+    pt9 = add_noise(1500 * intensity, PRESSURE_NOISE * 0.7)  # HPA
+
     # Prepare data for each table
     wanda1_data = {
         'pt1': round(pt01, 2),
@@ -238,6 +242,7 @@ def generate_sample_data(elapsed_time, duration_seconds):
         'pt6': round(pt06, 2),
         'pt7': round(pt07, 2),
         'pt8': round(pt08, 2),
+        'pt9': round(pt9, 2),
         'continuity_raw': round(continuity_raw, 2)
     }
 
