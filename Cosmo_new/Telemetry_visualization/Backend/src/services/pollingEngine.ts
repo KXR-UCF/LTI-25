@@ -6,7 +6,7 @@ import { TelemetryPacket } from '../types/telemetry';
 
 const PIPE_PATH = '/tmp/switch_pipe';
 // Continuity voltage threshold - if voltage drops below this, circuit is complete
-const CONTINUITY_THRESHOLD = 2.0; // Volts
+const CONTINUITY_THRESHOLD = 1.0; // Volts
 
 export class PollingEngine {
   private isRunning: boolean = false;
@@ -137,6 +137,7 @@ export class PollingEngine {
     // DEBUG: Log query performance every 60 polls (~1 second)
     if (this.pollCount % 60 === 0) {
       console.log(`[Query Perf] Took ${queryTime.toFixed(2)}ms | Timestamp: ${telemetryRow?.timestamp || 'null'}`);
+      console.log(`[Continuity] raw=${telemetryRow?.continuity_raw} type=${typeof telemetryRow?.continuity_raw} result=${telemetryRow?.continuity_raw != null ? telemetryRow.continuity_raw < CONTINUITY_THRESHOLD : 'skipped'}`);
       console.log(`[Dedup Stats] Broadcasts: ${this.totalBroadcasts} | Skipped: ${this.totalDuplicatesSkipped}`);
     }
 
@@ -144,7 +145,7 @@ export class PollingEngine {
     const currentSwitches = this.switchManager.getState();
 
     // Override continuity based on telemetry voltage threshold (if available)
-    if (telemetryRow) {
+    if (telemetryRow && telemetryRow.continuity_raw != null) {
       currentSwitches.continuity = telemetryRow.continuity_raw < CONTINUITY_THRESHOLD;
     }
 

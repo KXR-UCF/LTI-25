@@ -29,18 +29,18 @@ tmux kill-session -t "$SESSION" 2>/dev/null
 # Create new session and first window
 tmux new-session -d -s "$SESSION"
 
-# Start socket client in new window
+# Start backend in first pane
 tmux send-keys -t "$SESSION:0" \
-    "echo "Press Crtl+b and d to return to end the script"" C-m \
-    "cd $SOCKET_PATH" C-m \
-    "python3 socket_client.py" C-m
-
-# Start backend in new pane
-tmux split-window -h -t "$SESSION"
-tmux send-keys -t "$SESSION" \
     "echo "Press Crtl+b and d to return to end the script"" C-m \
     "cd $BACKEND_PATH" C-m \
     "npm start" C-m
+
+# Start socket client in new pane
+tmux split-window -h -t "$SESSION"
+tmux send-keys -t "$SESSION" \
+    "echo "Press Crtl+b and d to return to end the script"" C-m \
+    "cd $SOCKET_PATH" C-m \
+    "python3 socket_client.py" C-m
 
 # Start frontend in new window
 tmux split-window -v -t "$SESSION"
