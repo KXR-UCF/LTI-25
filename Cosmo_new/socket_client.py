@@ -17,8 +17,6 @@ while not connected:
         program_time = time.time() - start_time
         print(f"{program_time:<5.2f}s Failed to connect... Attempting to connect")
         time.sleep(1)
-if connected:
-    print(f"Connected to {controller_pi_address}")
 
 # s.connect(("192.168.1.30", 9600))
 ser = serial.Serial("/dev/ttyACM0", 9600)
@@ -34,13 +32,13 @@ current_switch_states = {
     'switch1': False,   # NOX FILL
     'switch2': False,   # NOX VENT
     'switch3': False,   # NOX RELIEF
-    'switch4': False,   # DOME VENT
-    'switch5': False,   # FUEL/NOX MAIN
+    'switch4': False,   # UNMAPPED
+    'switch5': False,   # UNMAPPED
     'switch6': False,   # N2 FILL
     'switch7': False,   # N2 VENT
-    'switch8': False,   # FUEL/N2 RELIEF
-    'switch9': False,   # SERVO PWR
-    'switch10': False,  # SERVO MOVE
+    'switch8': False,   # N2 RELIEF
+    'switch9': False,   # UNMAPPED
+    'switch10': False,  # UNMAPPED
     'continuity': False, # CONTINUITY (not mapped to hardware switch)
     'launchKey': False,
     'abort': False
@@ -70,13 +68,13 @@ def parse_and_track_state(msg_str):
                 '1': 'switch1',   # NOX FILL
                 '2': 'switch2',   # NOX VENT
                 '3': 'switch3',   # NOX RELIEF
-                '4': 'switch4',   # DOME VENT
-                '5': 'switch5',   # FUEL/NOX MAIN
+                '4': 'switch4',   # UNMAPPED
+                '5': 'switch5',   # UNMAPPED
                 '6': 'switch6',   # N2 FILL
                 '7': 'switch7',   # N2 VENT
-                '8': 'switch8',   # FUEL/N2 RELIEF
-                '9': 'switch9',   # SERVO PWR
-                '10': 'switch10', # SERVO MOVE
+                '8': 'switch8',   # N2 RELIEF
+                '9': 'switch9',   # UNMAPPED
+                '10': 'switch10', # UNMAPPED
             }
             if switch_num in switch_map:
                 current_switch_states[switch_map[switch_num]] = state
@@ -242,6 +240,9 @@ try:
 
 except KeyboardInterrupt:
     print("Interrupted by user")
+
+except (socket.error, ConnectionResetError, BrokenPipeError) as e:
+    print(f"Socket error or connection lost: {e}")
 
 finally:
     # close the connection
