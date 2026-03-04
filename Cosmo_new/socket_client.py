@@ -17,6 +17,8 @@ while not connected:
         program_time = time.time() - start_time
         print(f"{program_time:<5.2f}s Failed to connect... Attempting to connect")
         time.sleep(1)
+if connected:
+    print(f"Connected to {controller_pi_address}")
 
 # s.connect(("192.168.1.30", 9600))
 ser = serial.Serial("/dev/ttyACM0", 9600)
