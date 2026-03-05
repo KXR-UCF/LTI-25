@@ -37,7 +37,7 @@ CONFIG_FILE_NAME = "config.yaml"
 def print_log(message:str):
     lines = message.split('\n')
     for line in lines:
-        print(f"[{datetime.now(tz=est).strftime('%Y-%m-%d %H:%M:%S')}] {line}")
+        print(f"[{datetime.now(tz=est).strftime('%Y-%m-%d %H:%M:%S.%f')}] {line}")
 
 class ControllerServer:
     def __init__(self):
