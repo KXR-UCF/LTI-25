@@ -30,6 +30,24 @@ export class SwitchStateManager {
   }
 
   /**
+   * Forces all actuated outputs to OFF.
+   * Used by ABORT transitions to guarantee a safe reset state.
+   */
+  private forceAllOutputsOff(): void {
+    this.state.switch1 = false;
+    this.state.switch2 = false;
+    this.state.switch3 = false;
+    this.state.switch4 = false;
+    this.state.switch5 = false;
+    this.state.switch6 = false;
+    this.state.switch7 = false;
+    this.state.switch8 = false;
+    this.state.switch9 = false;
+    this.state.switch10 = false;
+    this.state.launchKey = false;
+  }
+
+  /**
    * Parses string messages from Python pipe and updates boolean state
    * Logic matches socket_client.py format
    */
@@ -67,10 +85,12 @@ export class SwitchStateManager {
     // 3. Handle Abort ("ABORT Open", "ABORT Close")
     // Based on Python script: "ABORT Open" maps to state=True
     if (msg === 'ABORT Open') {
+      this.forceAllOutputsOff();
       this.state.abort = true;
       return;
     }
     if (msg === 'ABORT Close') {
+      this.forceAllOutputsOff();
       this.state.abort = false;
       return;
     }
