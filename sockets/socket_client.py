@@ -41,6 +41,12 @@ try:
 
 except KeyboardInterrupt:
     print("Interrupted by user")
+    try:
+        s.send(b"SHUTDOWN;")
+        response_msg = s.recv(1024).decode().strip()
+        print(f"Received Response: {response_msg}")
+    except Exception:
+        pass
 
 finally:
     # close the connection 
