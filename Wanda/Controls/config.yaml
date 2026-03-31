@@ -1,5 +1,5 @@
 PIs:
-  controller:
+  1:
     enabled: true
     ip: 192.168.1.30
     relays:
@@ -36,7 +36,7 @@ PIs:
         switch: FIRE
         hold_position: null
 
-  1:
+  2:
     enabled: true
     ip: 192.168.1.31
     relays:
@@ -73,7 +73,7 @@ PIs:
         switch: null
         hold_position: false
 
-  2:
+  3:
     enabled: false
     ip: 192.168.1.32
     relays:
