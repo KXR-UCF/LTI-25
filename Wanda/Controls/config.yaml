@@ -1,5 +1,6 @@
 PIs:
-  1:
+  wanda1:
+    hostname: "wanda1"
     enabled: true
     ip: 192.168.1.30
     relays:
@@ -36,7 +37,8 @@ PIs:
         switch: FIRE
         hold_position: null
 
-  2:
+  wanda2:
+    hostname: "wanda2"
     enabled: true
     ip: 192.168.1.31
     relays:
@@ -73,7 +75,8 @@ PIs:
         switch: null
         hold_position: false
 
-  3:
+  wanda3:
+    hostname: "wanda3"
     enabled: false
     ip: 192.168.1.32
     relays:
@@ -109,7 +112,3 @@ PIs:
         name: null
         switch: null
         hold_position: false
-
-
-COSMO:
-  ip: 192.168.1.6

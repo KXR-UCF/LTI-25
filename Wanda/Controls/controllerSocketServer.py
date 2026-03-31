@@ -32,6 +32,8 @@ RELAY_PINS = [5, 6, 13, 16, 19, 20, 21, 26]
 HOST = '0.0.0.0'   # Accept connections from any IP address
 PORT = 9600        # Same port as in the client
 
+COSMO_HOSTNAME = "cosmo"
+
 # /Wanda/Controls/config.yaml
 CONFIG_FILE_NAME = "config.yaml"
 
@@ -185,25 +187,29 @@ class ControllerServer:
             # accept incoming connection
             client_socket, client_address = self.server_socket.accept()
             ip = client_address[0]
+            
+            # Get hostname from received ip
+            try:
+                hostname, aliases, addresses = socket.gethostbyaddr(ip)
+            except socket.herror as exc:
+                print("Socket server connected to something, but the hostname could not be verified as Cosmo")
+                client_socket.close()
+                continue
 
-            # TODO: Do handshake with incoming connection (maybe to get hostname)
-
-            # check for COSMO connection against ip address
-            # TODO: Check against hostname instead of ip address
-            if ip == self.config["COSMO"]["ip"]:
+            # check for COSMO connection against hostname
+            if hostname.lower().startswith(COSMO_HOSTNAME):
                 self.cosmo_socket = client_socket
                 COSMO_connected = True
                 print_log("COSMO Connection Established")
                 continue
 
-            # check for worker Pi connection against ip address
+            # check for worker Pi connection against hostname
             known_worker = False
             # iterates through each worker in config
             for pi_id, data in self.config["PIs"].items():
                 # ! ISSUE: does not check if pi is enabled
-                # checks if incoming ip is the current worker pis ip
-                # TODO: Check against hostname instead of ip address
-                if ip == data["ip"]:
+                # checks if incoming hostname is the current worker pis hostname
+                if hostname == data["hostname"] and data["enabled"]:
                     client_socket.settimeout(0.2) # used to check for ACKs when sending commands to worker pis
                     self.worker_pis[str(pi_id)] = WorkerPi(pi_id, client_address, client_socket)
                     print_log(f"Pi {pi_id} Connection Established")
@@ -214,8 +220,9 @@ class ControllerServer:
             # ! ISSUE: seems like this would not flag unkown connections after cosmo connects
             if not known_worker and not COSMO_connected:
                 print_log(f"Unknown connection from {ip}")
+                client_socket.close()
 
-        print_log("ALL CONNECTIONs ESTABLISHED")
+        print_log("ALL CONNECTIONS ESTABLISHED")
 
 
     def send_command_to_worker(self, worker_id: str, command: str, max_retries:int=5) -> bool:
