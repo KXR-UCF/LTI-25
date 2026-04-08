@@ -1,11 +1,10 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/wiki/KXR-UCF/LTI/Images/LTI_Logo.png" alt="LTI Logo" width="300"/>
+  <img src="https://github.com/user-attachments/assets/dfb9ba20-90f2-4d87-a80b-ac4135f498d7" alt="LTI Logo" width="300"/>
   
   <h1>LTI - Launch & Test Infrastructure</h1>
   
   <p>Ground support software for KXR static fires. This repository contains all code running on the DAQ & Controls system (WANDA) and the control station (COSMO).</p>
 </div>
-
 
 ## System Overview
 
