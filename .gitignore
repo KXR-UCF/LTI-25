@@ -81,6 +81,12 @@ venv.bak/
 *.d
 *.lock
 
+# C++
+bin/
+build/
+*.o
+*.exe
+
 # Telemetry data (if you want to exclude large data files)
 # telemetryData.txt
 
