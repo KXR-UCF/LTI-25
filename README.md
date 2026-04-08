@@ -38,10 +38,7 @@
 
 ---
 
-## Architecture Flow
-
-The LTI system is built on a split-network architecture:
-
+## Architecture
 
 ### Controls
 1. **Commands:** COSMO sends socket commands over the local network.
