@@ -1,82 +1,54 @@
-# LTI 25
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/dfb9ba20-90f2-4d87-a80b-ac4135f498d7" alt="LTI Logo" width="300"/>
+  
+  <h1>LTI - Launch & Test Infrastructure</h1>
+</div>
 
-A comprehensive telemetry and data visualization system with multiple UI interfaces and data processing capabilities.
+## System Overview
 
-## Project Structure
+| System | Location | Description |
+|--------|----------|-------------|
+| **WANDA** | [`Wanda/`](/Wanda/) | Runs downrange on three Raspberry Pis. Handles actuator controls, data aquisiton, and the database. |
+| **COSMO** | [`Cosmo/`](/Cosmo/) | Run on the uprange control station. Handles live data visualization, and sends control states to WANDA for actuation. |
 
-### Frontend Applications
-- **liquid-ui**: Next.js application for liquid propellant monitoring
-- **solid-ui**: Next.js application for solid propellant monitoring
-- **backend**: Node.js server for API endpoints
+---
 
-### Data Processing
-- **questdb**: QuestDB integration for time-series data storage and processing
-- **sockets**: Socket communication for real-time data streaming
+## Repository Structure
 
-## Features
+```
+├── Wanda/
+│   ├── DataIngestion/       # Data ingestion from ADC to QuestDB
+│   ├── Controls/            # Raspberry Pi Socket server
+│   ├── Systemd/             # Service files for all Wanda processes
+│   ├── Questdb/             # QuestDB server setup
+│   ├── status_server.py     # Wanda Dashboards for system management
+│   └── requirements.txt     # Python requirements
+│
+├── Cosmo/
+│   ├── socket_client.py     # Command socket client
+│   ├── Telemetry_visualization/
+│   │   ├── Backend/         
+│   │   └── Frontend/        
+│   └── Systemd/             # Service files for all Cosmo processes
+│
+└── archive/
+```
 
-- Real-time telemetry data visualization
-- Load cell monitoring and graphing
-- Thermal couple data tracking
-- Pressure transducer readings
-- System controls and launch management
-- Continuity testing capabilities
+---
 
-## Getting Started
+## Architecture
 
-### Prerequisites
-- Node.js (v16 or higher)
-- Python 3.x
-- QuestDB
+### Controls
+1. **Commands:** COSMO sends socket commands over the local network.
+2. **Actuation:** WANDA receives these commands and switches on/off the appropriate relays.
 
-### Installation
+### Data Acquisition
+1. **Data Ingestion:** WANDA reads sensor data from the KXR ADC hats and sends it to the locally hosted QuestDB container.
+2. **Visualization:** COSMO queries that database to render real-time graphs.
 
-1. Clone the repository
-2. Install dependencies for each frontend application:
-   ```bash
-   cd frontend/application/liquid-ui
-   npm install
+---
 
-   cd ../solid-ui
-   npm install
-
-   cd ../backend
-   npm install
-   ```
-
-3. Install Python dependencies:
-   ```bash
-   cd questdb
-   pip install -r requirements.txt
-   ```
-
-### Running the Applications
-
-1. Start QuestDB
-2. Run the socket server:
-   ```bash
-   cd questdb
-   python socket_server.py
-   ```
-3. Start the backend API:
-   ```bash
-   cd frontend/application/backend
-   npm start
-   ```
-4. Start the frontend applications:
-   ```bash
-   cd frontend/application/liquid-ui
-   npm run dev
-
-   # In another terminal
-   cd frontend/application/solid-ui
-   npm run dev
-   ```
-
-## Data Format
-
-Telemetry data is stored in a space-separated format with four columns representing different sensor readings.
-
-## License
-
-This project is part of the LTI 25 mission.
+## Helpful Resources
++ See [`Wanda/`](Wanda/README.md) for all setup instructions related to the WANDA system. 
++ See [`Cosmo/`](Cosmo/README.md) for all setup instructions related to the COSMO system.
++ The test stand uses custom KXR Raspberry Pi hats built around the ADS1256 24-bit ADC. Hardware design files (KiCad schematics, gerbers, BOM) are located in [`Wanda/DataIngestion/ADC/Pi Hat/`](Wanda/DataIngestion/ADC/Pi%20Hat/).
