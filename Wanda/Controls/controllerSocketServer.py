@@ -31,7 +31,8 @@ RELAY_PINS = [5, 6, 13, 16, 19, 20, 21, 26]
 
 # Define the server's IP address and port
 HOST = '0.0.0.0'   # Accept connections from any IP address
-PORT = 9600        # Same port as in the client
+TCP_PORT = 9600    # Port Worker Pis use to connect
+UDP_PORT = 9601    # Port used to listen to COSMO
 
 # /Wanda/Controls/config.yaml
 CONFIG_FILE_NAME = "config.yaml"
@@ -58,7 +59,8 @@ class ControllerServer:
         print_log(f"{'='*50}\n{'='*50}\n{'='*50}\nController Started")
         self.load_config()
         self.setup_gpio()
-        self.setup_socket()
+        self.setup_tcp_socket()
+        self.setup_udp_socket()
         self.switch_map = self.build_switch_map()
 
         self.worker_pis = {}
@@ -71,6 +73,7 @@ class ControllerServer:
         self.switch_states['ABORT'] = False
         self.sender = None
 
+        self.hold = False
         self.abort = False
 
         # used to make more complex timing and controls for certain switches
@@ -121,33 +124,48 @@ class ControllerServer:
         for pin in RELAY_PINS:
             GPIO.setup(pin, GPIO.OUT)
 
-    def enable_keepalive(self, sock: socket.socket) -> None:
-        """Enables TCP Keepalive on the socket to detect physical disconnections."""
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-        # Adjust keepalive timers (Linux/Raspberry Pi specific)
-        if hasattr(socket, 'TCP_KEEPIDLE'):
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 1) # Time before sending keepalive probes
-        if hasattr(socket, 'TCP_KEEPINTVL'):
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 1) # Interval between keepalive probes
-        if hasattr(socket, 'TCP_KEEPCNT'):
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3) # Failed probes before dropping connection
+    # def enable_keepalive(self, sock: socket.socket) -> None:
+    #     """Enables TCP Keepalive on the socket to detect physical disconnections."""
+    #     sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+    #     # Adjust keepalive timers (Linux/Raspberry Pi specific)
+    #     if hasattr(socket, 'TCP_KEEPIDLE'):
+    #         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 1) # Time before sending keepalive probes
+    #     if hasattr(socket, 'TCP_KEEPINTVL'):
+    #         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 1) # Interval between keepalive probes
+    #     if hasattr(socket, 'TCP_KEEPCNT'):
+    #         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3) # Failed probes before dropping connection
 
-    def setup_socket(self) -> None:
+    def setup_tcp_socket(self) -> None:
         """
         Creates socket server for clients to connect to.
         Starts allowing connections.
         """
 
         # Create a TCP/IP socket
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.tcp_server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         # Bind the socket to the address and port
-        self.server_socket.bind((HOST, PORT))
+        self.tcp_server_socket.bind((HOST, TCP_PORT))
 
         # Enable the server to accept connections (max 1 connection in the backlog queue)
-        self.server_socket.listen(5)
-        print_log(f"Server listening on {HOST}:{PORT}...")
+        self.tcp_server_socket.listen(5)
+        print_log(f"Server listening on {HOST}:{TCP_PORT}...")
+
+
+    def setup_udp_socket(self) -> None:
+        """
+        Creates udp socket to listen for state from COSMO.
+        """
+
+        # Create IPv4 UDP socket
+        self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        # bind socket to address and port
+        self.udp_socket.bind((HOST, UDP_PORT))
+
+        print_log(f"UDP Server listening on {HOST}:{UDP_PORT}...")
 
 
     def build_switch_map(self) -> dict:
@@ -181,61 +199,69 @@ class ControllerServer:
     def wait_for_connections(self) -> None:
         """Accepts all incomming connections.
 
-        Tracks if COSMO and the expected number of worker pis have connected.
+        Tracks if the expected number of worker pis have connected.
         Uses the config file to check if the ip address of an incoming
-        connection matches the ip of an enabled worker pi or cosmo
+        connection matches the ip of an enabled worker pi
 
         TODO:
             * Check hostnames instead of ip addresses
             * Use handshake of some sort 
 
         Warning:
-            This method will block indefinitely if a worker Pi or COSMO fails 
+            This method will block indefinitely if a worker Pi fails 
             to connect or has an incorrect IP in the config.
         """
 
         print_log(f"Waiting for {self.num_enabled_pis} connections...")
-        COSMO_connected = False
         num_connected_workers = 0
 
         # waits until cosmo is connected and the number of connected worker pis is correct
-        while num_connected_workers < self.num_enabled_pis-1 or not COSMO_connected:
+        while num_connected_workers < self.num_enabled_pis-1:
             # accept incoming connection
-            client_socket, client_address = self.server_socket.accept()
-            self.enable_keepalive(client_socket)
+            client_socket, client_address = self.tcp_server_socket.accept()
+            # self.enable_keepalive(client_socket) # NOTE: this may be useful to stop in case of disconnection of worker pi
             ip = client_address[0]
 
             # TODO: Do handshake with incoming connection (maybe to get hostname)
-
-            # check for COSMO connection against ip address
-            # TODO: Check against hostname instead of ip address
-            if ip == self.config["COSMO"]["ip"]:
-                self.cosmo_socket = client_socket
-                COSMO_connected = True
-                print_log("COSMO Connection Established")
-                continue
 
             # check for worker Pi connection against ip address
             known_worker = False
             # iterates through each worker in config
             for pi_id, data in self.config["PIs"].items():
-                # ! ISSUE: does not check if pi is enabled
+                if not data["enabled"]:
+                    continue
+
                 # checks if incoming ip is the current worker pis ip
                 # TODO: Check against hostname instead of ip address
                 if ip == data["ip"]:
                     client_socket.settimeout(0.2) # used to check for ACKs when sending commands to worker pis
                     self.worker_pis[str(pi_id)] = WorkerPi(pi_id, client_address, client_socket)
-                    print_log(f"Pi {pi_id} Connection Established")
                     known_worker = True
                     num_connected_workers += 1
+                    print_log(f"Pi {pi_id} Connection Established")
                     break
 
-            # ! ISSUE: seems like this would not flag unkown connections after cosmo connects
-            if not known_worker and not COSMO_connected:
+            if not known_worker:
                 print_log(f"Unknown connection from {ip}")
 
-        print_log("ALL CONNECTIONs ESTABLISHED")
+        print_log("All Worker Pis Connected")
 
+
+    def get_bit(self, state_int: int, postition: int):
+        bitmask = 1 << postition
+        ret = bitmask & state_int
+        return bool(ret)
+
+
+    def get_control_state(self) -> dict:
+        NUM_STATES = 32
+
+        self.udp_socket.settimeout(10) # TODO: add timeout to config
+        cosmo_state_bytes = self.udp_socket.recvfrom(1024);
+    
+        for bit, state_id in enumerate(NUM_STATES):
+            state = self.get_bit(cosmo_state_bytes, state_id)
+        
 
     def send_command_to_worker(self, worker_id: str, command: str, max_retries:int=5) -> bool:
         """Sends command to worker pis
@@ -516,8 +542,8 @@ class ControllerServer:
                 self.cosmo_socket.close()
             for worker_pi in self.worker_pis.values():
                 worker_pi.socket.close()
-            if self.server_socket:
-                self.server_socket.close()
+            if self.tcp_server_socket:
+                self.tcp_server_socket.close()
             if self.sender is not None:
                 try:
                     self.sender.close()
@@ -528,7 +554,7 @@ class ControllerServer:
             print_log("Cleanup complete.")
 
 
-    def hold(self) -> None:
+    def enter_hold(self) -> None:
         """Sets relays to hold position
         
         Checks if the relay has a specific hold position. If so,
@@ -582,18 +608,18 @@ class ControllerServer:
             self.cosmo_socket = None
 
         start_time = time.time()
-        self.server_socket.settimeout(1.0)  # sets time step to check timer
+        self.tcp_server_socket.settimeout(1.0)  # sets time step to check timer
 
         while time.time() - start_time < timeout_seconds:
             try:
-                client_socket, client_address = self.server_socket.accept()
+                client_socket, client_address = self.tcp_server_socket.accept()
                 self.enable_keepalive(client_socket)
                 ip = client_address[0]
                 
                 if ip == self.config["COSMO"]["ip"]:
                     self.cosmo_socket = client_socket
                     self.cosmo_address = client_address
-                    self.server_socket.settimeout(None)
+                    self.tcp_server_socket.settimeout(None)
                     print_log("COSMO Reconnected successfully!")
                     return True
                 else:
@@ -607,7 +633,7 @@ class ControllerServer:
                 print_log(f"Error accepting connection during reconnect: {e}")
                 time.sleep(1)
 
-        self.server_socket.settimeout(None)
+        self.tcp_server_socket.settimeout(None)
         print_log("Reconnect timeout expired. Proceeding to shutdown.")
         return False
 

@@ -110,6 +110,12 @@ PIs:
         switch: null
         hold_position: false
 
-
 COSMO:
   ip: 192.168.1.6
+
+AUX_KEY1_BIT: 27
+AUX_KEY2_BIT: 28
+ARM_BIT: 29
+FIRE_BIT: 30
+HOLD_BIT: 31
+ABORT_BIT: 32
