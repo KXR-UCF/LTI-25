@@ -64,22 +64,27 @@ class ControllerServer:
         self.switch_map = self.build_switch_map()
 
         self.worker_pis = {}
-        self.cosmo_socket = None
+        self.cosmo_socket = None # NOTE: this probably won't be needed for the UDP setup
         self.cosmo_address = None # unused
         
+        # TODO: This section will need to change with the additional extra switches
+        # NOTE: switch states remembers the current state of all switches
+        #       it would make more sense at this point to instead move this into storing relay states
+        #       we can use the names of each relay in the config as the key in a relay_states dict.
+        #       I may look into the potential of broadcasting the Pis state for frontend
         self.switch_states = {self._format_col_name(switch_id): False for switch_id in self.switch_map.keys()}
         self.switch_states['FIRE_KEY'] = False
         self.switch_states['FIRE'] = False
         self.switch_states['ABORT'] = False
         self.sender = None
 
-        self.hold = False
+        self.hold = False # NOTE: currently unused (may change)
         self.abort = False
 
         # used to make more complex timing and controls for certain switches
         self.override_manager = OverrideManager(self)
 
-
+    # TODO: adjust for new UDP system: switch_ids will just be integers so that will need to change
     def _format_col_name(self, switch_id: str) -> str:
         """
         Adds underscores in place of spaces for questdb columns.
@@ -96,7 +101,7 @@ class ControllerServer:
             return f"switch_{s}"
         return s
 
-
+    # NOTE: No changes required for UDP
     def load_config(self) -> None:
         """
         Loads data cfrom config file.
@@ -114,7 +119,7 @@ class ControllerServer:
         # get number of enabled Pis from config file
         self.num_enabled_pis = sum((1 for pi_id in self.config["PIs"] if self.config["PIs"][pi_id]["enabled"]))
 
-
+    # NOTE: No changes required for UDP
     def setup_gpio(self) -> None:
         """
         Sets up all GPIO pins ahead of using them
@@ -124,6 +129,7 @@ class ControllerServer:
         for pin in RELAY_PINS:
             GPIO.setup(pin, GPIO.OUT)
 
+    # NOTE: This is commented out because we may still use in the future
     # def enable_keepalive(self, sock: socket.socket) -> None:
     #     """Enables TCP Keepalive on the socket to detect physical disconnections."""
     #     sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
@@ -150,7 +156,7 @@ class ControllerServer:
 
         # Enable the server to accept connections (max 1 connection in the backlog queue)
         self.tcp_server_socket.listen(5)
-        print_log(f"Server listening on {HOST}:{TCP_PORT}...")
+        print_log(f"TCP Server listening on {HOST}:{TCP_PORT}...")
 
 
     def setup_udp_socket(self) -> None:
@@ -158,16 +164,22 @@ class ControllerServer:
         Creates udp socket to listen for state from COSMO.
         """
 
-        # Create IPv4 UDP socket
-        self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            # Create IPv4 UDP socket
+            self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        # bind socket to address and port
-        self.udp_socket.bind((HOST, UDP_PORT))
+            # bind socket to address and port
+            self.udp_socket.bind((HOST, UDP_PORT))
 
-        print_log(f"UDP Server listening on {HOST}:{UDP_PORT}...")
+            print_log(f"UDP Server listening on {HOST}:{UDP_PORT}...")
 
+        except OSError as e:
+            print_log(f"Failed to setup UDP socket on {HOST}:{UDP_PORT}. Error: {e}")
+            raise SystemExit(1)
 
+    # NOTE: This is probably fine as is for now. As long as we don't put any switch ids higher than 20 for now.
+    #       Somehow we need to let this know which bits are switches, buttons, and keys.
     def build_switch_map(self) -> dict:
         """
         Builds switch map based off information in loaded config file
@@ -247,22 +259,49 @@ class ControllerServer:
         print_log("All Worker Pis Connected")
 
 
-    def get_bit(self, state_int: int, postition: int):
-        bitmask = 1 << postition
+    def get_bit(self, state_int: int, postition: int) -> bool:
+        """
+        Gets the true of false state of a bit in an integer.
+
+        Args:
+            state_int (int): The state integer with each bit as a control state
+            position (int): The 0 indexed position of the bit to get data from
+
+        Returns:
+            bool: The state of the bit in the state integer
+        """
+
+        bitmask = 1 << (postition)
         ret = bitmask & state_int
         return bool(ret)
 
 
-    def get_control_state(self) -> dict:
+    def get_control_state(self) -> list:
+        """
+        Recieves control state integer from cosmo and extracts the state of each bit.
+
+        Returns:
+            list: a 0 indexed list of bit states
+        """
+        # TODO: add timeout to config (future improvement)
+        # TODO: add error handling in case of timeout (future improvement) (should go to hold position if timeout reached)
+
         NUM_STATES = 32
 
-        self.udp_socket.settimeout(10) # TODO: add timeout to config
-        cosmo_state_bytes = self.udp_socket.recvfrom(1024);
-    
-        for bit, state_id in enumerate(NUM_STATES):
-            state = self.get_bit(cosmo_state_bytes, state_id)
+        self.udp_socket.settimeout(10)
+        data, address = self.udp_socket.recvfrom(4); # future improvement: accept more bytes and do some verification with the extra bytes
         
+        cosmo_state_int = int.from_bytes(data, byteorder='big') # NOTE: byteorder will need to be adjusted to whichever one cosmo sends
 
+        # get bit state of each bit
+        comso_bit_states = []
+        for bit_position in range(NUM_STATES):
+            state = self.get_bit(cosmo_state_int, bit_position)
+            comso_bit_states.append(state)
+
+        return comso_bit_states
+        
+    # NOTE: This will remain unchanged for udp
     def send_command_to_worker(self, worker_id: str, command: str, max_retries:int=5) -> bool:
         """Sends command to worker pis
         
@@ -331,6 +370,7 @@ class ControllerServer:
         print_log(f"Max retries reached for Pi {worker_pi.id}")
         return False
             
+    # TODO: Change for UDP (This will need a more comprehensive switch map)
     # decodes command (FORM: "switch open/close")
     def decode_cmd(self, cmd: str) -> Tuple[str, bool]:
         """Decodes a command
@@ -398,7 +438,7 @@ class ControllerServer:
         
         return switch_id, state
 
-
+    # NOTE: Probaly will remain unchanged for UDP
     def set_relay(self, pi_id: str, relay_id: int, state: bool) -> bool:
         """Actuates relay
 
@@ -437,7 +477,7 @@ class ControllerServer:
 
         return success
     
-    
+    # FUTURE TODO: I'd probably prefer this to actually show the relays status rather than the switch status
     def post_status_to_questdb(self, switch_id, target_state) -> None:
         """update controls data in questdb
         
@@ -466,7 +506,7 @@ class ControllerServer:
 
         pass
 
-
+    # TODO: Change for UDP to handle the list of control states
     def handle_command(self, cmd: str) -> None:
         """Handles the process for a command
         
@@ -591,7 +631,7 @@ class ControllerServer:
         for worker_id in list(self.worker_pis.keys()):
             self.send_command_to_worker(worker_id, "SHUTDOWN", max_retries=2)
 
-
+    # TODO change for UDP (don't worry about it yet)
     def reconnect_cosmo(self, timeout_seconds=300) -> None:
         """Recconnects COSMO during a disconnection
 
@@ -652,7 +692,7 @@ class ControllerServer:
 
         print_log(f"{'='*50}")
         try:
-            # Register signal handler for system termination
+            # Register signal handler for system termination (this detects if we stop its systemd service)
             signal.signal(signal.SIGTERM, sigterm_handler)
             
             # gets all connections
@@ -662,6 +702,7 @@ class ControllerServer:
             while True:
                 try:
                     # recieves command from COSMO
+                    # TODO: switch to the get_control_states() function
                     self.cosmo_socket.settimeout(None)
                     msg = self.cosmo_socket.recv(1024)
 
