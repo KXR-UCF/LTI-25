@@ -132,12 +132,13 @@ class ADS1256:
         return data
         
     def waitDRDY(self):
-        for i in range(0,400000,1):
-            if(self.digital_read(self.drdy_pin) == 0):
+        # for i in range(0,400000,1):
+        #     if(self.digital_read(self.drdy_pin) == 0):
                 
-                break
-        if(i >= 400000):
-            print ("Time Out ...\r\n")
+        #         break
+        # if(i >= 400000):
+        #     print ("Time Out ...\r\n")
+        GPIO.wait_for_edge(self.drdy_pin, GPIO.FALLING, timeout=100)
         
         
     def readChipID(self):
@@ -201,14 +202,15 @@ class ADS1256:
         else:
             print("ID Read failed   ")
             return -1
-        self.configADC(GAIN_E['GAIN_1'], DRATE_E['30000SPS'])
+        self.configADC(GAIN_E['GAIN_1'], DRATE_E['3750SPS'])
         return 0
         
     def read_ADC_Data(self):
         self.waitDRDY()
         self.digital_write(self.cs_pin, GPIO.LOW)#cs  0
         self.spi_writebyte([CMD['CMD_RDATA']])
-        self.delay_ms(10)
+        # self.delay_ms(10)
+        time.sleep(0.0001) # can be 0.00001
 
         buf = self.spi_readbytes(3)
         self.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
@@ -228,17 +230,21 @@ class ADS1256:
             self.setChannel(Channel)
             self.writeCmd(CMD['CMD_SYNC'])
             # self.delay_ms(10)
+            time.sleep(0.0001) # can be 0.00001
             self.writeCmd(CMD['CMD_WAKEUP'])
             # self.delay_ms(200)
+            time.sleep(0.0001) # can be 0.00001
             Value = self.read_ADC_Data()
         else:
             if(Channel>=4):
                 return 0
             self.setDiffChannel(Channel)
             self.writeCmd(CMD['CMD_SYNC'])
-            self.delay_ms(10)
+            # self.delay_ms(10)
+            time.sleep(0.0001) # can be 0.00001
             self.writeCmd(CMD['CMD_WAKEUP'])
-            self.delay_ms(10)
+            # self.delay_ms(10)
+            time.sleep(0.0001) # can be 0.00001
             Value = self.read_ADC_Data()
         return Value
     
